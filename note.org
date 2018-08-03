@@ -1,0 +1,116 @@
+#+TITLE: Note
+
+* segue do list
+  
+- Create the scene instance if doesn't exist
+
+- Push current scene to =uikit-scene-ring= for coming back.
+  
+- call =uikit-open= on the new scene.
+  
+- Set uikit-buffer-scene
+  
+* How does an app open
+
+An app is initialized by =open-xxx= command created by =uikit-define-app= macro.
+In initialization, the app initialize the entry scene, then segue to it.
+  
+* How does a scene open
+
+Segue open the scene by =(uikit-open scene)=, and the setup is done by that method.
+
+- create a buffer if non exist, set it to =buffer= slot.
+
+- set buffer local variable =uikit-buffer-scene=.
+  
+- draws the scene with =uikit-draw=.
+
+  
+* How does a scene / stack view draw
+  
+A scene is no more than a special stack view, so a scene draws just like a stack view.
+
+** Be asked to draw
+
+segue (=uikit-segue=) will ask the scene to draw.
+The scene will create a buffer if it doesn't have one.
+Then it looks up specified width and height, width can be window width if not setted,
+height will be infinity if not set.
+
+** Report size
+
+It askes its subviews in =subview-list= to report their min size.
+And they, if stack, will ask their subviews to report (=uikit-report-width= & =uikit-report-height=) 
+size and sum that up, then report up.
+Normal views will just make their content with =uikit-make-content= and report the size of that.
+
+** Arrange position
+   
+When scene (and each stack view) got their subviews, they calculate each subview's position
+based on =subview-layout= of that scene / stack view.
+
+** Ask subviews to draw
+
+The scene (and each stack view) calls =uikit-draw= on each subviews with their position.
+
+
+* Make content process
+  
+** uikit-make-content
+This function is the main function. Each different views has different implementations.
+At the end, it should return a list of strings, each stirng is a line.
+
+** after implementations
+
+Subclasses do their stuff in =:after= (or =:before=) methods.
+
+** TODO around uikit-make-content
+In around method of =uikit-view= (the ultimate parent) class,
+The =content= slot is set to the new content.
+Properties (keymap, face, perperty-list) will *not* be added to each line,
+that needs to wait until =uikit-draw=.
+
+
+* How does a view draw
+  
+=uikit-draw= of view takes a position and width and height.
+  
+** Get content
+
+If =content-changed= is =t=, new content is calculates,
+other wise it will simply use the cached =content= slot.
+
+** Additional process
+
+First if the width and height didn't change from last =uikit-draw=,
+use the =padded-content= cached.
+Otherwise the content will be padded again.
+
+Then set =width= and =height= slot for cache.
+
+Then properties (keymap, face, perperty-list) will be added to each line,
+then =padded-content= is set will the new content.
+
+Finally the content is drew with =uikit-draw=, a function rather than a method.
+
+
+* TO-DO list
+
+** TODO uikit launch pad
+
+
+* View
+- text propertyies are added automatically in =uikit-make-content=.
+  
+* Button
+
+** Button function
+The easiest way is to overload =uikit-invoke-button= function (with =eql=),
+which binds to mouse1/2/3/ and RET on button. For more control,
+define your function and bind it in button's keymap.
+
+
+* Subclassing
+
+Don't overload =initialize-instance= function of view classes directly.
+If you need to control the initialization, create a subclass.
