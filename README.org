@@ -1,0 +1,51 @@
+#+TITLE: UIKit
+
+This package aim to provide a high level framework 
+and a set of useful widgets to help developers 
+make GUI in Emacs.
+
+Some not-so-accurate metaphor: cocoa touch, Bootstrap, Qt, GTK+.
+
+Important features:
+
+- Text based :: It doesn't require andy third party
+                engines or anything. Everything is text.
+
+- Two dimentional coordinate :: In UIKit, positions are like (x, y)
+                                instead of normal linear position like 245.
+                                
+- UIKit handles layout for you :: Actually, you never need to worry about positions,
+                                  UIKit does all the layout arranging and content drawing.
+                                  All you do is configure the layout and update widget
+                                  content.
+                                  
+- Powerful modern widgets :: Besides basic widgets like label and button, 
+                             UIKit provides useful widgets like
+                             stack (stack view), scroll (scroll view),
+                             table (table view), dialog box, etc. You can see the cocoa touch infulunce. 
+                             
+- Easy control on the flow of the UI :: UIKit provides powerful tools to handle the movement 
+                                        between "scenes" (a page), like going back to last scene, 
+                                        jump to a scene, and tab bar (like the tab bar in your iOS app).
+                                        
+* Overall inpmelentation
+  
+Each "app" is made of many "scenes", and the app has a entrance scene.
+Kind of like homepage and webpages of a website.
+
+Each scene is made of many "view"s, or "widget" (I'll use view from now on).
+
+There are two types of views, on contains real content, like a button or a label;
+the other contains other views. The latter is "stack view". It is responsible for
+arranging "subviews" of it.
+
+So each secene has a top most stack view, and it contains other stack views or normal views,
+And those stack views contains other stackview and normal views. Basically a tree.
+
+When it's time to draw the scene, top most stack view asks its subviews for their minimal size,
+and they ask their sub views all the way to the bottom. Then the minimal size is reported all the 
+way back to top stack view. It then calculates the arrangment based on the pre-configured layout spec.
+After that, it tells its subviews to draw on point (x, y) with size (width, height), then its
+subviews draws them selfs: a stack view would arrange for its own subviews and normal views will draw them self.
+
+
