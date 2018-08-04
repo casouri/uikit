@@ -10,11 +10,13 @@
   
 - Set uikit-buffer-scene
   
+
 * How does an app open
 
 An app is initialized by =open-xxx= command created by =uikit-define-app= macro.
 In initialization, the app initialize the entry scene, then segue to it.
   
+
 * How does a scene open
 
 Segue open the scene by =(uikit-open scene)=, and the setup is done by that method.
@@ -26,9 +28,9 @@ Segue open the scene by =(uikit-open scene)=, and the setup is done by that meth
 - draws the scene with =uikit-draw=.
 
   
-* How does a scene / stack view draw
+* How does a scene / stack draw
   
-A scene is no more than a special stack view, so a scene draws just like a stack view.
+A scene is no more than a special stack, so a scene draws just like a stack view.
 
 ** Be asked to draw
 
@@ -46,29 +48,12 @@ Normal views will just make their content with =uikit-make-content= and report t
 
 ** Arrange position
    
-When scene (and each stack view) got their subviews, they calculate each subview's position
-based on =subview-layout= of that scene / stack view.
+When scene (and each stack) got their subviews, they calculate each subview's position
+based on =subview-layout= of that scene / stack.
 
 ** Ask subviews to draw
 
-The scene (and each stack view) calls =uikit-draw= on each subviews with their position.
-
-
-* Make content process
-  
-** uikit-make-content
-This function is the main function. Each different views has different implementations.
-At the end, it should return a list of strings, each stirng is a line.
-
-** after implementations
-
-Subclasses do their stuff in =:after= (or =:before=) methods.
-
-** TODO around uikit-make-content
-In around method of =uikit-view= (the ultimate parent) class,
-The =content= slot is set to the new content.
-Properties (keymap, face, perperty-list) will *not* be added to each line,
-that needs to wait until =uikit-draw=.
+The scene (and each stack) calls =uikit-draw= on each subviews with their position.
 
 
 * How does a view draw
@@ -77,10 +62,28 @@ that needs to wait until =uikit-draw=.
   
 ** Get content
 
-If =content-changed= is =t=, new content is calculates,
+If =content-changed= is =t=, new content is calculated,
 other wise it will simply use the cached =content= slot.
 
-** Additional process
+*Make content process*
+  
+*** uikit-make-content
+This function is the main function. Each different views has different implementations.
+At the end, it should return a list of strings, each stirng is a line.
+
+*** :after method of each implementations
+
+Subclasses do their stuff in =:after= (or =:before=) methods.
+
+*** TODO around uikit-make-content
+
+In around method of =uikit-view= (the ultimate parent) class,
+The =content= slot is set to the new content.
+Properties (keymap, face, perperty-list) will *not* be added to each line,
+that needs to wait until =uikit-draw=.
+
+
+** DONE Additional process
 
 First if the width and height didn't change from last =uikit-draw=,
 use the =padded-content= cached.
@@ -88,16 +91,19 @@ Otherwise the content will be padded again.
 
 Then set =width= and =height= slot for cache.
 
-Then properties (keymap, face, perperty-list) will be added to each line,
+Then properties (keymap, face, perperty-list, uikit-view) will be added to each line,
 then =padded-content= is set will the new content.
 
 Finally the content is drew with =uikit-draw=, a function rather than a method.
 
 
 * TO-DO list
+  
+** TODO uikit-pad-content
 
 ** TODO uikit launch pad
 
+** TODO view at point
 
 * View
 - text propertyies are added automatically in =uikit-make-content=.
