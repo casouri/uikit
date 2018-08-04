@@ -37,6 +37,23 @@
 
 ;;; Base function
 
+(defun uikit-prepare-canvas (&optional width height)
+  "Prepare the canvas by inserting spaces.
+WIDTH and HEIGHT are optional."
+  (let ((width (or width (window-width)))
+        (height (or height (window-height)))
+        current-line-left-over)
+    (save-excursion
+      (goto-char (point-max))
+      (setq current-line-left-over
+            (- width
+               (- (point)
+                  (line-beginning-position))))
+      (insert (make-string (1- current-line-left-over) ?\s) ?\n)
+      ;; ??? absolute line number?
+      (dotimes (_ (- height (line-number-at-pos (point))))
+        (insert (make-string (1- width) ?\s) ?\n)))))
+
 (defmacro uikit-append (seq elt)
   "Append ELT to SEQ destructivly. This is a macro."
   `(if ,seq
@@ -263,20 +280,33 @@ Return a integer."
   ;; abstract
   nil)
 
-(cl-defmethod uikt-make-content :around ((view uikit-view))
-  "Add text properties."
-  ;; TOTEST
-  (let ((content (cl-call-next-method))
-        (all-property (append `(face ,(face-of view) keymap ,(keymap-of view))
-                              (property-list-of view))))
-    (dolist (line content)
-      (add-text-properties 0 (length line) all-property line))
-    content))
+;; (cl-defmethod uikt-make-content :around ((view uikit-view))
+;;   "Add text properties."
+;;   ;; TOTEST
+;;   (let ((content (cl-call-next-method))
+;;         (all-property (append `(face ,(face-of view) keymap ,(keymap-of view))
+;;                               (property-list-of view))))
+;;     (dolist (line content)
+;;       (add-text-properties 0 (length line) all-property line))
+;;     content))
 
 (cl-defmethod uikit-draw ((view uikit-view) pos width height)
   "Draw the content on screen."
-  ;; abstract
-  nil)
+  ;; TOTEST
+  (let ((content (if (and (equal width (width-of view))
+                          (equal height (height-of view)))
+                     (padded-content-of view)
+                   (uikit-pad-content (uikit-make-content view))))
+        (all-property (append `(uikit-view ,view face ,(face-of view) keymap ,(keymap-of view))
+                              (property-list-of view)))
+        line-length)
+    (setf (width-of view) width
+          (height-of view) height)
+    ;; measure line length by the first line of content.
+    (setq line-length (length (car content)))
+    (dolist (line content)
+      (add-text-properties 0 line-length all-property line))
+    (uikit-draw content)))
 
 (defclass uikit-stack ()
   ((subview-list
