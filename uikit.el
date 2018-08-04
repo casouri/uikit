@@ -280,16 +280,6 @@ Return a integer."
   ;; abstract
   nil)
 
-;; (cl-defmethod uikt-make-content :around ((view uikit-view))
-;;   "Add text properties."
-;;   ;; TOTEST
-;;   (let ((content (cl-call-next-method))
-;;         (all-property (append `(face ,(face-of view) keymap ,(keymap-of view))
-;;                               (property-list-of view))))
-;;     (dolist (line content)
-;;       (add-text-properties 0 (length line) all-property line))
-;;     content))
-
 (cl-defmethod uikit-draw ((view uikit-view) pos width height)
   "Draw the content on screen."
   ;; TOTEST
