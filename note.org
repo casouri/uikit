@@ -10,12 +10,16 @@
   
 - Set uikit-buffer-scene
   
-
 * How does an app open
 
 An app is initialized by =open-xxx= command created by =uikit-define-app= macro.
 In initialization, the app initialize the entry scene, then segue to it.
   
+* Scene
+
+A scene is a "page". It is a special stack.
+
+You can conveniently define a scene with =uikit-define-scene=.
 
 * How does a scene open
 
@@ -27,7 +31,6 @@ Segue open the scene by =(uikit-open scene)=, and the setup is done by that meth
   
 - draws the scene with =uikit-draw=.
 
-  
 * How does a scene / stack draw
   
 A scene is no more than a special stack, so a scene draws just like a stack view.
@@ -36,87 +39,174 @@ A scene is no more than a special stack, so a scene draws just like a stack view
 
 segue (=uikit-segue=) will ask the scene to draw.
 The scene will create a buffer if it doesn't have one.
-Then it looks up specified width and height, width can be window width if not setted,
-height will be infinity if not set.
 
-** Report size
+** Make content
 
-It askes its subviews in =subview-list= to report their min size.
-And they, if stack, will ask their subviews to report (=uikit-report-width= & =uikit-report-height=) 
-size and sum that up, then report up.
-Normal views will just make their content with =uikit-make-content= and report the size of that.
+- Aske subviews to make their content and set their width and height information.
 
-** Arrange position
-   
-When scene (and each stack) got their subviews, they calculate each subview's position
-based on =subview-layout= of that scene / stack.
+- Arrange subviews by =constrain-list=.
+
+- Then set width and height of stack by finding largest =y+height= and =x+width=.
 
 ** Ask subviews to draw
 
-The scene (and each stack) calls =uikit-draw= on each subviews with their position.
-
+The scene (and each stack) calls =uikit-draw= on each subviews with their position + stack position.
+Stack position here is like an offset.
 
 * How does a view draw
   
-=uikit-draw= of view takes a position and width and height.
+=uikit-draw= of view takes a position.
   
 ** Get content
 
-If =content-changed= is =t=, new content is calculated,
-other wise it will simply use the cached =content= slot.
+Get content by =uikit-make-content=
 
 *Make content process*
+
+This function calculates content and sets width and height.
   
 *** uikit-make-content
+
 This function is the main function. Each different views has different implementations.
 At the end, it should return a list of strings, each stirng is a line.
+Each subclass is responsible of making sure each line has same length.
 
-*** :after method of each implementations
+*** uikit-make-content :around
+The parent class of all views =uikit-view= has an =:around= method
+that sets content cache (=content= slot) to the content calculated.
 
-Subclasses do their stuff in =:after= (or =:before=) methods.
+This function only make content when content cached is outdated (=content-changed= slot t)
+It then resets =content-changed=.
 
-*** TODO around uikit-make-content
+Then set =width= and =height= slot for cache.
+=width= is calculated by the first line's length.
 
-In around method of =uikit-view= (the ultimate parent) class,
-The =content= slot is set to the new content.
-Properties (keymap, face, perperty-list) will *not* be added to each line,
-that needs to wait until =uikit-draw=.
+** inhibit modification
 
+=inhibit-modification-hooks= is set to t,
+so some hooks that uikit uses to alter user input doesn't run.
 
 ** DONE Additional process
 
-First if the width and height didn't change from last =uikit-draw=,
-use the =padded-content= cached.
-Otherwise the content will be padded again.
-
-Then set =width= and =height= slot for cache.
+If pos is given, set pos to cache,
+if not, use cached pos. 
+This is normally set by stack's arragement.
 
 Then properties (keymap, face, perperty-list, uikit-view) will be added to each line,
 then =padded-content= is set will the new content.
 
 Finally the content is drew with =uikit-draw=, a function rather than a method.
 
-
-* TO-DO list
-  
-** TODO uikit-pad-content
-
-** TODO uikit launch pad
-
-** TODO view at point
-
 * View
 - text propertyies are added automatically in =uikit-make-content=.
   
+* Constrain system
+
+A scene has a list of constrain rules describing all subviews and subviews of subviews.
+It looks like:
+
+#+BEGIN_SRC emacs-lisp
+'((s1.top = scene.top)
+  (s2.top = s1.bottom)
+  (button.left = (+ 2 s2.left)
+  (s3.top = 120)))
+#+END_SRC
+
+Left hand side is set with the value of right hand side.
+
+*rhs can be:*
+
+- A symbol like lhs. If the attribute has a value,
+  use that value; if not, program searches the symbol
+  as lhs in the list and calculate the value recursively.
+  
+- A number. 
+
+- A expression of =+=, =-=, =*=, =/=. Each argument must be
+  a valid rhs -- symbol/number/expression.
+
+*Symbol*:
+
+Each symbol is made of =tag name.attribute=.
+Available attributes:
+
+- top
+- bottom
+- left
+- right
+- height
+- width
+  
+Note that =bottom= and =right= are kind of like pseudo attributes.
+They are calculated base on =top= & =height= / =left= & =width=.
+
+
+** Additional stack distributions
+
+- stack :: Each subview is "stacked" together one after another.
+           
+- portion :: Each subview is allocated a portion of stack.
+             
+- equal-space :: Subviews are separated by equal spaces.
+
+** Implementation
+
+For each constrain in the list, turn lhs into the setter function of
+the attribute of that view. Turn rhs into a value.
+
+* Tag system
+
+Each view have an id. An id can also point to a list of views. 
+You can get the view by id with =uikit-id-view=.
+Many uikit functions takes id as an argument.
+
 * Button
+
 
 ** Button function
 The easiest way is to overload =uikit-invoke-button= function (with =eql=),
 which binds to mouse1/2/3/ and RET on button. For more control,
 define your function and bind it in button's keymap.
 
-
 * Subclassing
 
 Don't overload =initialize-instance= function of view classes directly.
 If you need to control the initialization, create a subclass.
+* View
+  
+** Slots
+
+- face
+- pad-char
+- constrain
+- keymap
+- property-list
+- content
+- padded-content
+- content-changed
+
+** Subclass
+   
+*Functions need to implement:*
+
+- uikit-report-width
+- uikit-report-height
+- uikit-make-content
+
+* TO-DO list
+  
+** TODO uikit button id
+
+** TODO uikit-quit
+  
+** TODO uikit launch pad
+
+** TODO logging
+   
+* Benchmark
+
+#+BEGIN_SRC
+(benchmark-run 100000 (goto-line 10))
+(7.9963120000000005 3 0.12082300000000012)
+#+END_SRC
+
