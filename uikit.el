@@ -483,69 +483,6 @@ dd properties: face, keymap, uikit-view, others in property-list."
 
 ;;;;; Constrain
 
-;;;;;; Resolve functions
-;;
-;; Following functions resolve user written rules into
-;; functions (set) (lhs) or values (get) (rhs).
-;; Then the main constrain routine will apply
-;; values to functions.
-
-(defun uikit-constrain-resolve-symbol (stack symbol)
-  "Resolve SYMBOL and return (view-form . direction-text) of STACK."
-  (let* ((text (symbol-name symbol))
-         (text-list (split-string text "-"))
-         (direction-text (nth 1 text-list)) ; top/bottom/left/right/width/height
-         (view-text (nth 0 text-list)) ; subviewxxx/stack
-         view)
-    (setq view (if (equal view-text "stack")
-                   stack
-                 (nth (string-to-number
-                       (substring-no-properties view-text 7 (length view-text)))
-                      (subview-list-of stack))))
-    (cons view direction-text)))
-
-(defun uikit-constrain-resolve-get (stack symbol)
-  "Return the corresponding value of SYMBOL in constrain list of STACK.
-If the value isn' set yet, return nil.
-If the symbol is invalid, error."
-  (let* ((result (uikit-constrain-resolve-symbol stack symbol))
-         (view (car result))
-         (direction-text (cdr result)))
-    (funcall (or (intern-soft (format "uikit-constrain-get-%s" direction-text))
-                 (error "Invalid direction or symbol: %s" (symbol-name symbol)))
-             view)))
-
-(defun uikit-constrain-resolve-set (stack symbol)
-  "Return the corresponding function of SYMBOL in constrain list of STACK.
-If SYMBOL is invalid, error."
-  (let* ((result (uikit-constrain-resolve-symbol stack symbol))
-         (view (car result))
-         (direction-text (cdr result)))
-    (funcall (or (intern-soft (format "uikit-constrain-set-%s" direction-text))
-                 (error "Invalid direction or symbol: %s" (symbol-name symbol)))
-             view)))
-
-(defun uikit-constrain-resolve-rhs (stack right)
-  "RIGHT can be a symbol, a number, or a computation like (+ symbol number).
-STACK is the owner of the constrains."
-  (pcase right
-    ((pred symbolp) (or (uikit-constrain-resolve-get stack right)
-                        ;; if value is set, use value
-                        ;; otherwise find rules that set that value
-                        ;; execute that rule, return the value
-                        (uikit-constrain-resolve-entry
-                         (uikit-constrain-find-entry stack right)
-                         stack)))
-    ((pred numberp) right)
-    ;; something like (+ 2 subview1-left)
-    ((pred sequencep) (apply (car right)
-                             (mapcar (lambda (rhs)
-                                       (uikit-constrain-resolve-rhs stack rhs))
-                                     (cdr right))))
-    (_ (print right)
-       (error "Invalid constrain")
-       nil)))
-
 ;;;;;; Main function
 
 (defun uikit-constrain-find-entry (left stack)
