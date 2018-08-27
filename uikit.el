@@ -193,12 +193,12 @@ CONTENT is a list of strings, their length have to equal to each other."
     :accessor width-of
     :initform nil
     :type (or null integer)
-    :documentation "The cached width.")
+    :documentation "The width.")
    (height
     :accessor height-of
     :initform nil
     :type (or null integer)
-    :documentation "The cached height."))
+    :documentation "The height."))
   "Parent of `uikit-view' and `uikit-stack'.
 Both be a subview of one another."
   :abstract t)
@@ -213,6 +213,16 @@ ARGS are passed to `make-instance'."
         (id (symbol-name id)))
     (when (member 'uikit-stack (eieio-class-parents view-class))
       ;; TOTEST
+      ;; stack.stack-style
+      (setf (symbol-function (intern (format "%s.stack-style" id)))
+            (eval `(lambda (&optional style)
+                     ,(format "Set/get stacking style of %s.
+If STYLE non-nil, set; otherwise get.
+To set to nil, use symbol 'null." id)
+                     (if style
+                         (setf (stack-style-of view) (if (eq style 'null) nil style))
+                       (stack-style-of view)))))
+
       (setf (symbol-function (intern (format "%s.space" id)))
             (eval `(lambda ()
                      "Returns the length of the expected space between subviews."
@@ -423,7 +433,19 @@ dd properties: face, keymap, uikit-view, others in property-list."
    :accessor subview-list-of
    :initarg :subview-list
    :initform nil
-   :documentation "List of subviews of the stack view."))
+   :documentation "List of subviews of the stack view.")
+  (stack-style
+   :accessor stack-style-of
+   :initarg :stack-style
+   :initform 'stack
+   :documentation "Determins how does stack \"stack\" subviews together.
+It can be 'stack, 'equal-space or 'portion."
+   :type symbol)
+  (portion-plist
+   :accessor portion-plist-of
+   :initform nil
+   :documentation "A plist of subview id and their portion in stack.
+Only takes effect if stack-style of the stack is 'portion.this is not good, this is too slow."))
  "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
 (cl-defmethod uikit-make-content ((stack uikit-stack))
