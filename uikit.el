@@ -312,29 +312,8 @@ If VALUE is non-nil, set; otherwise get."
   "Return the up left position of VIEW.
 Position is a `uikit-pos'."
   ;; TESTED
-  (let ((left (left-of view))
-        (right (right-of view))
-        (top (top-of view))
-        (bottom (bottom-of view))
-        (width (width-of view))
-        (height (height-of view))
-        x y)
-    (setq x (if left
-                left
-              (if (and width
-                       right)
-                  (- right width)
-                (error (format "Not enough constrains in x direction of %s"
-                               (id-of view)))
-                nil)))
-    (setq y (if top
-                top
-              (if (and height
-                       bottom)
-                  (- bottom height)
-                (error (format "Not enough constrains in y direction of %s"
-                               (id-of view)))
-                nil)))
+  (let ((x (uikit-attribute-by-id (id-of view) 'left))
+        (y (uikit-attribute-by-id (id-of view) 'top)))
     (make-uikit-pos :x x :y y)))
 
 ;;;; View
