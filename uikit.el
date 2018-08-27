@@ -210,8 +210,20 @@ Both be a subview of one another."
 They are named base on ID: e.g. ID.left / ID.right / etc
 ARGS are passed to `make-instance'."
   (let ((view (cl-call-next-method)))
+    (when (member 'uikit-stack (eieio-class-parents view-class))
+      ;; TOTEST
+      (setf (symbol-function (intern (format "%s.space" id)))
+            (eval `(lambda ()
+                     "Returns the length of the expected space between subviews."
+                     (let* ((subview-list (subview-list-of ,view))
+                            (id-list (mapcar 'id-of subview-list))
+                            (width-list (mapcar (lambda (id) (funcall (symbol-function (intern (format "%s.width" id)))))
+                                                id-list))
+                            (stack-width (funcall (symbol-function (intern (format "%s.width" ,id))))))
+                       (/ (- stack-width (apply '+ width-list)) (length subview-list)))))
+            ))
     (setf
-     ;; left
+     ;; view.left
      (symbol-function (intern (format "%s.left" id)))
      (eval `(lambda (&optional left)
               ,(format "Set/get LEFT of %s.
@@ -224,7 +236,7 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (- (right-of ,view) (width-of ,view))
                       (error nil))))))
-     ;; right
+     ;; view.right
      (symbol-function (intern (format "%s.right" id)))
      (eval `(lambda (&optional right)
               ,(format "Set/get RIGHT of %s.
@@ -237,7 +249,7 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (+ (left-of ,view) (width-of ,view))
                       (error nil))))))
-     ;; top
+     ;; view.top
      (symbol-function (intern (format "%s.top" id)))
      (eval `(lambda (&optional top)
               ,(format "Set/get TOP of %s.
@@ -250,7 +262,7 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (- (bottom-of ,view) (height-of ,view))
                       (error nil))))))
-     ;; bottom
+     ;; view.bottom
      (symbol-function (intern (format "%s.bottom" id)))
      (eval `(lambda (&optional bottom)
               ,(format "Set/get BOTTOM of %s.
@@ -263,7 +275,7 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (+ (top-of ,view) (height-of ,view))
                       (error nil))))))
-     ;; width
+     ;; view.width
      (symbol-function (intern (format "%s.width" id)))
      (eval `(lambda (&optional width)
               ,(format "Set/get WIDTH of %s.
@@ -276,7 +288,7 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (- (right-of ,view) (left-of ,view))
                       (error nil))))))
-     ;; height
+     ;; view.height
      (symbol-function (intern (format "%s.height" id)))
      (eval `(lambda (&optional height)
               ,(format "Set/get HEIGHT of %s.
@@ -470,46 +482,6 @@ dd properties: face, keymap, uikit-view, others in property-list."
  (setf (buffer-of scene) (get-buffer-create (name-of scene))))
 
 ;;;;; Constrain
-
-;;;;;; Getter & Setter
-
-(defun uikit-constrain-set-top (view)
-  "Return a function that set TOP to top of VIEW and return TOP."
-  (lambda (top)
-    (setf (uikit-pos-y (pos-of view)) top)
-    top))
-
-(defun uikit-constrain-set-bottom (view)
-  "Return a function that set BOTTOM to top of VIEW and return BOTTOM."
-  (lambda (bottom)
-    (if (height-of view)
-        (setf (uikit-pos-y (pos-of view)) (- bottom (height-of view)))
-      (setf (height-of view) (- bottom (uikit-pos-y (pos-of view)))))
-    bottom))
-
-(defun uikit-constrain-set-left (view)
-  "Return a function that set LEFT to top of VIEW and return LEFT."
-  (lambda (left)
-    (setf (uikit-pos-x (pos-of view)) left)
-    left))
-
-(defun uikit-constrain-set-right (view)
-  "Return a function that set RIGHT to top of VIEW and return RIGHT."
-  (lambda (right)
-    (if (width-of view)
-        (setf (uikit-pos-x (pos-of view)) (- right (width-of view)))
-      (setf (width-of view) (- right (uikit-pos-x (pos-of view)))))
-    right))
-
-(defun uikit-constrain-set-width (view)
-  "Return a function that set WIDTH to top of VIEW and return WIDTH."
-  (lambda (width)
-    (setf (width-of view) width)))
-
-(defun uikit-constrain-set-height (view)
-  "Return a function that set HEIGHT to top of VIEW and return HEIGHT."
-  (lambda (height)
-    (setf (height-of view) height)))
 
 ;;;;;; Resolve functions
 ;;
