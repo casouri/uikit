@@ -166,8 +166,8 @@ CONTENT is a list of strings, their length have to equal to each other."
   (;; required in init
    (id
     :initarg :id
-    :documentation "The identification of this view. Should be a string."
-    :type string)
+    :documentation "The identification of this view. Should be a symbol."
+    :type symbol)
    ;; not required in init
    (left
     :accessor left-of
