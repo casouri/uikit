@@ -209,7 +209,8 @@ Both be a subview of one another."
 
 They are named base on ID: e.g. ID.left / ID.right / etc
 ARGS are passed to `make-instance'."
-  (let ((view (cl-call-next-method)))
+  (let ((view (cl-call-next-method))
+        (id (symbol-name id)))
     (when (member 'uikit-stack (eieio-class-parents view-class))
       ;; TOTEST
       (setf (symbol-function (intern (format "%s.space" id)))
@@ -301,6 +302,11 @@ To set to nil, use symbol 'null." id)
                     (condition-case nil
                         (- (bottom-of ,view) (top-of ,view))
                         (error nil)))))))))
+
+(defun uikit-attribute-by-id (id attribute &optional value)
+  "Get or set ATTRIBUTE of view with id ID.
+If VALUE is non-nil, set; otherwise get."
+  (funcall (intern (format "%s.%s" (symbol-name id) (symbol-name attribute))) value))
 
 (defun pos-of (view)
   "Return the up left position of VIEW.
