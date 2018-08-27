@@ -69,7 +69,7 @@
 
 (ert-deftest uikit-gettter/setter ()
   "Test automatically generated getter/setter."
-  (let ((button (make-instance 'uikit-button :id "mybutton" :text "my button")))
+  (let ((button (make-instance 'uikit-button :id 'mybutton :text "my button")))
     ;; normal setter & getter
     (mybutton.left 10)
     (mybutton.right 10)
