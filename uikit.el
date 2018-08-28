@@ -29,6 +29,9 @@
   "Face used when mouse is on button."
   :group 'uikit)
 
+(defvar-local uikit-buffer-scene nil
+  "The scene of this buffer.")
+
 ;;; Base structs
 
 ; You can convert between raw pos (absolute pos)
@@ -334,8 +337,8 @@ Position is a `uikit-pos'."
    :initarg :face
    :initform nil
    :documentation "The face used for this view. Default to nil.
-ou can set face by property list but this is more convenient.
-ace in property list will override this. "
+You can set face by property list but this is more convenient.
+face in property list will override this. "
    :type (or null (satisfies facep)))
   (pad-char
    :accessor pad-char-of
@@ -348,9 +351,9 @@ ace in property list will override this. "
    :initarg :keymap
    :initform nil
    :documentation "Keymap on the view
-n addition to the default major and minor mode keymaps. Default to nil.
-ou can set keymap in property list but this is more convenient.
-ODO Does keymap in property list override this?
+in addition to the default major and minor mode keymaps. Default to nil.
+You can set keymap in property list but this is more convenient.
+TODO Does keymap in property list override this?
 "
    :type (or null (satisfies keymapp)))
   (property-list
@@ -358,8 +361,8 @@ ODO Does keymap in property list override this?
    :initarg :property-list
    :initform nil
    :documentation "Extra text properties that you want to put to view text.
-verwrites face and keymap slot.
-ach element of the list is an cons of PROPERTY and VALUE that are eligibel for `put-text-property'."
+overwrites face and keymap slot.
+each element of the list is an cons of PROPERTY and VALUE that are eligibel for `put-text-property'."
    :type (or null list))
 
   ;; content
@@ -368,9 +371,9 @@ ach element of the list is an cons of PROPERTY and VALUE that are eligibel for `
    :accessor content-of
    :initform ""
    :documentation "The actual text that is drew to canvas.
-ached for later use.
-ut it doesn't include the padding spaces around, since size might
-hange more frequent that the content. See `padded-content'")
+cached for later use.
+but it doesn't include the padding spaces around, since size might
+change more frequent that the content. See `padded-content'")
   (padded-content
    :accessor padded-content-of
    :initform ""
@@ -380,8 +383,8 @@ hange more frequent that the content. See `padded-content'")
    :accessor content-changed-of
    :initform t
    :documentation "If this is t, then content needs to be recalculated.
-verythime a change that alters the visual appearance of the view is made,
-his should be set to t. Don't change this value directly, use `uikit-changed'."
+Everythime a change that alters the visual appearance of the view is made,
+this should be set to t. Don't change this value directly, use `uikit-changed'."
    :type boolean))
  "A view is like a widget. It is the smallest unit of an UI.
 his class is an abstract class."
@@ -389,7 +392,7 @@ his class is an abstract class."
 
 (cl-defmethod uikit-make-content ((view uikit-view))
  "Make content from data, returna a list of strings, each string is a line.
-ach line must have same length and should not contain any return char."
+Each line must have same length and should not contain any return char."
  ;; abstract
  nil)
 
@@ -408,7 +411,7 @@ Sets `content-changed', `width', `height', `content' slots."
 (cl-defmethod uikit-draw ((view uikit-view) &optional pos)
  "Draw the content on screen.
 
-dd properties: face, keymap, uikit-view, others in property-list."
+Add properties: face, keymap, uikit-view, others in property-list."
  ;; TOTEST
  (let ((content (uikit-make-content view))
        (all-property (append `(uikit-view ,view
@@ -484,9 +487,17 @@ Only takes effect if stack-style of the stack is 'portion.this is not good, this
  "A scene is like a web page."
  :abstract t)
 
-(cl-defmethod initialize-instance :after ((scene uikit-scene) &key)
+(cl-defmethod make-instance :after ((scene uikit-scene) &key)
  "Create buffer for scene."
- (setf (buffer-of scene) (get-buffer-create (name-of scene))))
+ (setf (buffer-of scene)
+       (let ((buffer (get-buffer-create (name-of scene))))
+         (with-current-buffer buffer
+           (setq uikit-buffer-scene scene))
+         buffer)))
+
+(defun uikit-configure-constrain (scene)
+  "Configure constrain for each subview inside scene."
+  )
 
 ;;;;; Constrain
 
@@ -500,28 +511,11 @@ nil if none found."
       (when (equal (car entry) left)
         (throw 'return entry)))))
 
-(defun uikit-constrain-resolve-entry (stack entry)
-  "ENTRY is a constrain entry of STACK: (left = right)."
-  ;; TOTEST
-  (let* ((left-symbol (car entry))
-         (right-symbol (nth 2 entry)))
-    (funcall
-     ;; a function that sets and returns val
-     (uikit-constrain-resolve-set stack left-symbol)
-     ;; val
-     (uikit-constrain-resolve-rhs stack right-symbol))))
 
-(defun uikit-arrage-constrain (stack)
-  "Arrange subviews of STACK."
-  (dolist (subview (subview-list-of stack))
-    (setf (pos-of subview) nil))
-  (dolist (entry (constrain-list-of stack))
-    (uikit-constrain-resolve-entry entry stack))
-  ;; now the pos in each subview is relative pos
-  ;; relative to stack pos
-  ;; there shouldn't be any nil pos,
-  ;; if there are, the constrains have error
-  )
+(defun uikit-configure-stack-auto-constrain (scene)
+  "Let each stack of SCENE configure its subviews
+position automatically by its stacking style.
+\stack, equal-space, portion\)")
 
 ;;;; App
 
