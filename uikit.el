@@ -496,8 +496,9 @@ Only takes effect if stack-style of the stack is 'portion.this is not good, this
          buffer)))
 
 (defun uikit-configure-constrain (scene)
+  ;; TODO
   "Configure constrain for each subview inside scene."
-  )
+  ())
 
 ;;;;; Constrain
 
@@ -515,7 +516,9 @@ nil if none found."
 (defun uikit-configure-stack-auto-constrain (scene)
   "Let each stack of SCENE configure its subviews
 position automatically by its stacking style.
-\stack, equal-space, portion\)")
+\stack, equal-space, portion\)"
+  ;; TODO
+  )
 
 ;;;; App
 
