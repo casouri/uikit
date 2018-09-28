@@ -8,12 +8,15 @@
 
 (require 'eieio-base)
 
-;;; Variable
+;;; Customize
 
 (defgroup uikit
   ()
   "A UI framework."
   :group 'convenience)
+
+
+;;; Variable
 
 (defvar uikit-pad-char ?\s
   "The char used to pad views.")
@@ -34,66 +37,63 @@
 
 ;;; Base structs
 
-; You can convert between raw pos (absolute pos)
-; and (possibily) relative pos.
-; both direction are zero based.
 (cl-defstruct uikit-pos
  "Represents a position in cavas.
-oth x and y are zero based.
-ote that the length of the unit in y direction is about two times as
-he unit in x direction.
-or example (20, 10) nearly forms a square."
+both x and y are zero based.
+Note that the length of the unit in y direction is about two times as
+the unit in x direction.
+For example (20, 10) nearly forms a square."
  (x 0)
  (y 0))
 
 (cl-defmethod uikit-pos+ ((pos uikit-pos) (offset uikit-pos))
- "Add OFFSET to POS destructivly. Return the modified POS."
- (setf (uikit-pos-x pos) (+ (uikit-pos-x pos) (uikit-pos-x offset))
-       (uikit-pos-y pos) (+ (uikit-pos-y pos) (uikit-pos-y offset)))
- pos)
+  "Add OFFSET to POS destructivly. Return the modified POS."
+  (setf (uikit-pos-x pos) (+ (uikit-pos-x pos) (uikit-pos-x offset))
+        (uikit-pos-y pos) (+ (uikit-pos-y pos) (uikit-pos-y offset)))
+  pos)
 
-; TODO DOC
-(cl-defstruct uikit-layout
- "Specifies how does a stack arrange
-pace for its subviews.
+                                        ; TODO DOC
+;; (cl-defstruct uikit-layout
+;;  "Specifies how does a stack arrange
+;; space for its subviews.
 
-start-at is where does the subviews start stacking.
+;; start-at is where does the subviews start stacking.
 
-fill is the filling stretagy of subviews.
-t can be either 'proportional or 'equal.
-equal only takes effect when one of the directions
-s unbound.
+;; fill is the filling stretagy of subviews.
+;; it can be either 'proportional or 'equal.
+;; equal only takes effect when one of the directions
+;; is unbound.
 
-pace-between is the space between subviews.
+;; pace-between is the space between subviews.
 
-lign is the alignment of the subviews along the stack axis,
-t can be 'left, 'right, 'center.
-left and 'right is the relative direction when you regard
-start-at as top.
-therefore, if 'start-at is 'bottom, 'left is actually right."
- (start-at 'left)
- (fill 'proportional)
- (space-between 0)
- (align 'left))
+;; lign is the alignment of the subviews along the stack axis,
+;; t can be 'left, 'right, 'center.
+;; left and 'right is the relative direction when you regard
+;; start-at as top.
+;; therefore, if 'start-at is 'bottom, 'left is actually right."
+;;  (start-at 'left)
+;;  (fill 'proportional)
+;;  (space-between 0)
+;;  (align 'left))
 
-
+;; UNUSED
 (cl-defstruct uikit-range
- "Defines a range."
- (min 0)
- (max 0))
-
+  "Defines a range."
+  (min 0)
+  (max 0))
+;; UNUSED
 (cl-defmethod uikit-in (num (range uikit-range) &optional min-exclusive max-exclusive)
- "Return t if NUM is in RANGE, return nil if not.
+  "Return t if NUM is in RANGE, return nil if not.
 if MIN-EXCLUSIVE is t, range is min exclusive,
 else is  for MAX-EXCLUSIVE."
- (let ((min (uikit-range-min range))
-       (max (uikit-range-max range))
-       (less-than-func (if max-exclusive '< '<=))
-       (greater-than-func (if min-exclusive '> '>=)))
-   (if (and (funcall greater-than-func num min)
-            (funcall less-than-func num max))
-       t
-     nil)))
+  (let ((min (uikit-range-min range))
+        (max (uikit-range-max range))
+        (less-than-func (if max-exclusive '< '<=))
+        (greater-than-func (if min-exclusive '> '>=)))
+    (if (and (funcall greater-than-func num min)
+             (funcall less-than-func num max))
+        t
+      nil)))
 
 ;;; Base function
 
@@ -116,12 +116,14 @@ WIDTH and HEIGHT are optional."
         (insert (make-string (1- width) ?\s) ?\n)))))
 
 (defmacro uikit-append (seq elt)
+  ;; TOTEST
   "Append ELT to SEQ destructivly. This is a macro."
   `(if ,seq
        (nconc ,seq (list ,elt))
      (setq ,seq (list ,elt))))
 
 (defmacro uikit-push (elt seq)
+  ;; TOTEST
   "Push ELT to SEQ destructivly. This is a macro."
   `(if ,seq
        (push ,elt ,seq)
@@ -384,7 +386,8 @@ change more frequent that the content. See `padded-content'")
    :initform t
    :documentation "If this is t, then content needs to be recalculated.
 Everythime a change that alters the visual appearance of the view is made,
-this should be set to t. Don't change this value directly, use `uikit-changed'."
+this should be set to t. But don't change this value directly, use `uikit-changed'.
+Typically this value is changed to t in`uikit-make-content' and to nil in `uikit-draw'."
    :type boolean))
  "A view is like a widget. It is the smallest unit of an UI.
 his class is an abstract class."
