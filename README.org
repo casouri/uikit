@@ -8,13 +8,13 @@
 
 
 
-This package aim to provide a high level framework 
+This package aims to provide a high level framework
 and a set of useful widgets to help developers 
 make GUI in Emacs.
 
 Features:
 
-- Text based
+- Text based :: Everything is text. No images *at all*. Not even overlay image.
 
 - Two dimentional coordinate :: In UIKit, positions are like (x, y)
      instead of normal linear position like 245.
