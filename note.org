@@ -210,3 +210,10 @@ If you need to control the initialization, create a subclass.
 (7.9963120000000005 3 0.12082300000000012)
 #+END_SRC
 
+
+
+* Questions to ask
+- pos用con还是用struct
+- 关于push和append的问题
+- id用string还是symbol
+- :after :around是好选择吗？
