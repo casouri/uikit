@@ -2,7 +2,9 @@
 
 * Important
 
-This package is in early development stage, I upload the code so I can ask specific questions in the forum.
+*This package is in early development stage, I upload the code so I can ask specific questions in the forum.*
+
+*Check back in a year or so.*
 
 
 
