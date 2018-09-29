@@ -139,9 +139,7 @@ WIDTH and HEIGHT are optional."
 (defun uikit-goto (pos)
   "Go to `uikit-pos' POS."
   ;; TOTEST
-  (goto-char (point-min))
-  (forward-line (uikit-pos-y pos))
-  (goto-char (uikit-pos-x pos)))
+  (goto-char (uikit-pos-to-point pos)))
 
 (defun uikit-pos-to-point (pos)
   "Convert `uikit-pos' POS to point (integer)."
