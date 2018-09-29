@@ -144,7 +144,7 @@ WIDTH and HEIGHT are optional."
 (defun uikit-pos-to-point (pos)
   "Convert `uikit-pos' POS to point (integer)."
   ;; TOTEST
-  (+ (uikit-pos-x pos) (* (uikit-pos-y pos) (window-body-width))))
+  (+ 2 (uikit-pos-x pos) (* (1- (uikit-pos-y pos)) (window-body-width))))
 
 (defun uikit-raw-draw (content pos)
   "Draw raw strings to canvas at POS.
