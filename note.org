@@ -194,7 +194,8 @@ If you need to control the initialization, create a subclass.
 - uikit-make-content
 
 * TO-DO list
-  
+
+** TODO uikit-draw pos-of view
 ** TODO uikit button id
 
 ** TODO uikit-quit
@@ -209,7 +210,6 @@ If you need to control the initialization, create a subclass.
 (benchmark-run 100000 (goto-line 10))
 (7.9963120000000005 3 0.12082300000000012)
 #+END_SRC
-
 
 
 * Questions to ask

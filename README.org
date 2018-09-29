@@ -7,6 +7,23 @@
 *Check back in a year or so.*
 
 
+To try out the current stage:
+
+There are only label and button available, because I want to make auto layout work first.
+
+#+BEGIN_SRC emacs-lisp
+;; M-x eval-buffer or load uikit.el
+;; create a button
+(setq mybutton (make-instance 'uikit-button :id 'mybutton))
+;; create a position
+(setq mypos (make-uikit-pos :x 20 :y 10))
+;; make a new buffer and prepare canvas
+(switch-to-buffer (get-buffer-create "test"))
+(uikit-prepare-canvas)
+;; draw the button
+(uikit-draw mybutton mypos)
+;; you should be able to see a button
+#+END_SRC
 
 This package aims to provide a high level framework
 and a set of useful widgets to help developers 
