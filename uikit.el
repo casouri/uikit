@@ -152,14 +152,15 @@ CONTENT is a list of strings, their length have to equal to each other."
   ;; TOTEST hand tested
   (let (line
         (width (length (car content)))
-        (height (length content)))
+        (height (length content))
+        (window-width (window-body-width)))
     (save-excursion
       (uikit-goto pos)
       (while (setq line (pop content))
         (let ((point (point)))
           (uikit-replace-with line point (+ point width))
           ;; ??? maybe cache a window width for current scene
-          (goto-char (+ point (window-body-width))))))))
+          (goto-char (+ point window-width)))))))
 
 ;;; Base class
 
