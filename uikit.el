@@ -316,20 +316,31 @@ To set to nil, use symbol 'null." id)
                 (or (height-of ,view)
                     (condition-case nil
                         (- (bottom-of ,view) (top-of ,view))
-                        (error nil)))))))))
+                      (error nil)))))))
+    ;; don't forgot to return the view!
+    view))
 
 (defun uikit-attribute-by-id (id attribute &optional value)
   "Get or set ATTRIBUTE of view with id ID.
 If VALUE is non-nil, set; otherwise get."
   (funcall (intern (format "%s.%s" (symbol-name id) (symbol-name attribute))) value))
 
-(defun pos-of (view)
+(defun get/set-pos-of (view &optional pos)
   "Return the up left position of VIEW.
-Position is a `uikit-pos'."
+Position is a `uikit-pos'.
+
+If POS non-nil set instead of get."
   ;; TESTED
-  (let ((x (uikit-attribute-by-id (id-of view) 'left))
-        (y (uikit-attribute-by-id (id-of view) 'top)))
-    (make-uikit-pos :x x :y y)))
+  (if pos
+      (let ((x (uikit-pos-x pos))
+            (y (uikit-pos-x pos)))
+        (setf (left-of view) x
+              (top-of view) y)
+        ;; return pos
+        pos)
+    (let ((x (uikit-attribute-by-id (id-of view) 'left))
+          (y (uikit-attribute-by-id (id-of view) 'top)))
+      (make-uikit-pos :x x :y y))))
 
 ;;;; View
 
@@ -412,25 +423,25 @@ Sets `content-changed', `width', `height', `content' slots."
    (content-of view)))
 
 (cl-defmethod uikit-draw ((view uikit-view) &optional pos)
- "Draw the content on screen.
+  "Draw the content on screen.
 
 Add properties: face, keymap, uikit-view, others in property-list."
- ;; TOTEST
- (let ((content (uikit-make-content view))
-       (all-property (append `(uikit-view ,view
-                                          face ,(face-of view)
-                                          keymap ,(keymap-of view))
-                             (property-list-of view)))
-       line-length
-       (inhibit-modification-hooks t)
-       (pos (if pos
-                (setf (pos-of view) pos)
-              (pos-of view))))
-   ;; measure line length by the first line of content.
-   (setq line-length (length (car content)))
-   (dolist (line content)
-     (add-text-properties 0 line-length all-property line))
-   (uikit-raw-draw content pos)))
+  ;; TOTEST
+  (let ((content (uikit-make-content view))
+        (all-property (append `(uikit-view ,view
+                                           face ,(face-of view)
+                                           keymap ,(keymap-of view))
+                              (property-list-of view)))
+        line-length
+        (inhibit-modification-hooks t)
+        (pos (if pos
+                 (get/set-pos-of view pos)
+               (get/set-pos-of view))))
+    ;; measure line length by the first line of content.
+    (setq line-length (length (car content)))
+    (dolist (line content)
+      (add-text-properties 0 line-length all-property line))
+    (uikit-raw-draw content pos)))
 
 ;;;; Stack
 
