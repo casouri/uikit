@@ -206,15 +206,14 @@ CONTENT is a list of strings. Generally you want to make them have same length."
 Both be a subview of one another."
   :abstract t)
 
-(cl-defmethod make-instance :around ((view-class (subclass uikit-abstract-view)) &keys id &rest args)
+(cl-defmethod initialize-instance :after ((view uikit-abstract-view) &rest rest)
   ;; TESTED
   "Create getter&setter for left/right/top/bottom/width/height of VIEW.
 
 They are named base on ID: e.g. ID.left / ID.right / etc
 ARGS are passed to `make-instance'."
-  (let ((view (cl-call-next-method))
-        (id (symbol-name id)))
-    (when (member 'uikit-stack (eieio-class-parents view-class))
+  (let ((id (symbol-name (plist-get rest :id))))
+    (when (member 'uikit-stack (eieio-class-parents (eieio-object-class view)))
       ;; TOTEST
       ;; stack.stack-style
       (setf (symbol-function (intern (format "%s.stack-style" id)))
@@ -314,9 +313,7 @@ To set to nil, use symbol 'null." id)
                 (or (height-of ,view)
                     (condition-case nil
                         (- (bottom-of ,view) (top-of ,view))
-                      (error nil)))))))
-    ;; don't forgot to return the view!
-    view))
+                      (error nil)))))))))
 
 (defun uikit-attribute-by-id (id attribute &optional value)
   "Get or set ATTRIBUTE of view with id ID.
@@ -622,7 +619,7 @@ It can be either a symbol or a lambda.")
   "A button.")
 
 
-(cl-defmethod initialize-instance :after ((button uikit-button) &key)
+(cl-defmethod initialize-instance :after ((button uikit-button) &rest _)
   "Add help to properties."
   ;; TOTEST
   (setf (keymap-of button) (let ((map (make-sparse-keymap)))
