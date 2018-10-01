@@ -195,6 +195,9 @@ If you need to control the initialization, create a subclass.
 
 * TO-DO list
 
+** set =inhibit-modification-hooks= when drawing
+** TODO Replace =uikit-make-content= to =uikit-updatecontent=
+** TODO disable undo when drawing
 ** TODO uikit-draw pos-of view
 ** TODO uikit button id
 
@@ -209,6 +212,11 @@ If you need to control the initialization, create a subclass.
 #+BEGIN_SRC
 (benchmark-run 100000 (goto-line 10))
 (7.9963120000000005 3 0.12082300000000012)
+
+(setq mypos (make-uikit-pos :x 20 :y 10))
+(setq mylabel (make-instance 'uikit-label :id 'label :text "hhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh"))
+(benchmar-run 1000 (uikit-draw mylabel mypos))
+(0.15087099999999998 1 0.08625299999999925)
 #+END_SRC
 
 
