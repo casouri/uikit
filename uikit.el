@@ -280,7 +280,7 @@ To set to nil, use symbol 'null." id)
      (symbol-function (intern (format "%s.bottom" id)))
      (eval `(lambda (&optional bottom)
               ,(format "Set/get BOTTOM of %s.
-If BOTTOM non-nil, set; otherwise get.
+nnnIf BOTTOM non-nil, set; otherwise get.
 To set to nil, use symbol 'null." id)
               (if bottom
                   (setf (bottom-of ,view) (if (eq bottom 'null) nil
@@ -589,6 +589,30 @@ Creates a buffer and segue to the entry scene."
 (defclass uikit-button (uikit-label)
   ((text ;; override label.text
     :initform "Button")
+   (mouse-1-func
+    :initarg :mouse-1-func
+    :initform 'uikit-button-clicked
+    :accessor mouse-1-func-of
+    :documentation "The function invoked when mouse-1 clicked on the button.
+It can be either a symbol or a lambda.")
+   (mouse-2-func
+    :initarg :mouse-2-func
+    :initform 'uikit-button-clicked
+    :accessor mouse-2-func-of
+    :documentation "The function invoked when mouse-2 clicked on the button.
+It can be either a symbol or a lambda.")
+   (mouse-3-func
+    :initarg :mouse-3-func
+    :initform 'uikit-button-clicked
+    :accessor mouse-3-func-of
+    :documentation "The function invoked when mouse-3 clicked on the button.
+It can be either a symbol or a lambda.")
+   (return-func
+    :initarg :return-func
+    :initform 'uikit-button-clicked
+    :accessor return-func-of
+    :documentation "The function invoked when RET clicked on the button.
+It can be either a symbol or a lambda.")
    (help
     :initarg :help
     :initform "Click"
@@ -602,10 +626,10 @@ Creates a buffer and segue to the entry scene."
   "Add help to properties."
   ;; TOTEST
   (setf (keymap-of button) (let ((map (make-sparse-keymap)))
-                             (define-key map (kbd "<mouse-1>") #'uikit-button-click)
-                             (define-key map (kbd "<mouse-2>") #'uikit-button-click)
-                             (define-key map (kbd "<mouse-3>") #'uikit-button-click)
-                             (define-key map (kbd "<return>") #'uikit-button-click)
+                             (define-key map (kbd "<mouse-1>") (mouse-1-func-of button))
+                             (define-key map (kbd "<mouse-2>") (mouse-2-func-of button))
+                             (define-key map (kbd "<mouse-3>") (mouse-3-func-of button))
+                             (define-key map (kbd "<return>") (return-func-of button))
                              map))
   (setf (face-of button) 'uikit-button-face)
   (setf (property-list-of button)
@@ -615,11 +639,7 @@ Creates a buffer and segue to the entry scene."
 (defun uikit-button-click ()
   "Button clicked by user."
   (interactive)
-  (uikit-invoke-button (uikit-top-view-at-point)))
-
-(cl-defmethod uikit-invoke-button ((button uikit-button))
-  "Button clicked by mouse-1/2/3 or RET. Overload with (eql) specializer."
-  (message "Button clicked. You should overload this method."))
+  (message "Button pressed"))
 
 ;;; Debug
 
