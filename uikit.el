@@ -129,11 +129,12 @@ WIDTH and HEIGHT are optional."
        (push ,elt ,seq)
      (setq ,seq (list ,elt))))
 
-(defun uikit-replace-with (str start end)
-  "Replace strings between START and END with STR."
+(defun uikit-replace-with (str beg)
+  "Replace strings between BEG and (+ BEG (length STR)) with STR."
+  ;; TOTEST hand tested
   (save-excursion
-    (delete-region start end)
-    (goto-char start)
+    (delete-region (1+ beg) (+ 1 beg (length str)))
+    (goto-char beg)
     (insert str)))
 
 (defun uikit-goto (pos)
@@ -148,19 +149,17 @@ WIDTH and HEIGHT are optional."
 
 (defun uikit-raw-draw (content pos)
   "Draw raw strings to canvas at POS.
-CONTENT is a list of strings, their length have to equal to each other."
+CONTENT is a list of strings. Generally you want to make them have same length."
   ;; TOTEST hand tested
-  (let (line
-        (width (length (car content)))
-        (height (length content))
-        (window-width (window-body-width)))
+  (let ((window-width (window-body-width))
+        point)
     (save-excursion
       (uikit-goto pos)
-      (while (setq line (pop content))
-        (let ((point (point)))
-          (uikit-replace-with line point (+ point width))
-          ;; ??? maybe cache a window width for current scene
-          (goto-char (+ point window-width)))))))
+      (setq point (point))
+      (dolist (line content)
+        ;; ??? maybe cache a window width for current scene
+        (uikit-replace-with line point)
+        (setq point (+ point window-width))))))
 
 ;;; Base class
 
@@ -344,64 +343,64 @@ If POS non-nil set instead of get."
 ;;;; View
 
 (defclass uikit-view (uikit-abstract-view)
- ((face
-   :accessor face-of
-   :initarg :face
-   :initform nil
-   :documentation "The face used for this view. Default to nil.
+  ((face
+    :accessor face-of
+    :initarg :face
+    :initform nil
+    :documentation "The face used for this view. Default to nil.
 You can set face by property list but this is more convenient.
 face in property list will override this. "
-   :type (or null (satisfies facep)))
-  (pad-char
-   :accessor pad-char-of
-   :initarg :pad-char
-   :initform (eval uikit-pad-char)
-   :documentation "The char used to pad extra space."
-   :type character)
-  (keymap
-   :accessor keymap-of
-   :initarg :keymap
-   :initform nil
-   :documentation "Keymap on the view
+    :type (or null (satisfies facep)))
+   (pad-char
+    :accessor pad-char-of
+    :initarg :pad-char
+    :initform (eval uikit-pad-char)
+    :documentation "The char used to pad extra space."
+    :type character)
+   (keymap
+    :accessor keymap-of
+    :initarg :keymap
+    :initform nil
+    :documentation "Keymap on the view
 in addition to the default major and minor mode keymaps. Default to nil.
 You can set keymap in property list but this is more convenient.
 TODO Does keymap in property list override this?
 "
-   :type (or null (satisfies keymapp)))
-  (property-list
-   :accessor property-list-of
-   :initarg :property-list
-   :initform nil
-   :documentation "Extra text properties that you want to put to view text.
+    :type (or null (satisfies keymapp)))
+   (property-list
+    :accessor property-list-of
+    :initarg :property-list
+    :initform nil
+    :documentation "Extra text properties that you want to put to view text.
 overwrites face and keymap slot.
 each element of the list is an cons of PROPERTY and VALUE that are eligibel for `put-text-property'."
-   :type (or null list))
+    :type (or null list))
 
-  ;; content
+   ;; content
 
-  (content
-   :accessor content-of
-   :initform ""
-   :documentation "The actual text that is drew to canvas.
-cached for later use.
-but it doesn't include the padding spaces around, since size might
-change more frequent that the content. See `padded-content'")
-  (padded-content
-   :accessor padded-content-of
-   :initform ""
-   :documentation "The actual text that is drew on canvas, with padded space."
-   :type string)
-  (content-changed
-   :accessor content-changed-of
-   :initform t
-   :documentation "If this is t, then content needs to be recalculated.
+   (content
+    :accessor content-of
+    :initform ()
+    :documentation "The actual text that is drew to canvas, cached for later use.
+But it doesn't include the padding spaces around, since size might
+change more frequent that the content. See `padded-content'.
+It is a list of strings, each string is a line.")
+   (padded-content
+    :accessor padded-content-of
+    :initform ()
+    :documentation "The actual text that is drew on canvas, with padded space.
+It is a list for the same reason as `content'.")
+   (content-changed
+    :accessor content-changed-of
+    :initform t
+    :documentation "If this is t, then content needs to be recalculated.
 Everythime a change that alters the visual appearance of the view is made,
 this should be set to t. But don't change this value directly, use `uikit-changed'.
 Typically this value is changed to t in`uikit-make-content' and to nil in `uikit-draw'."
-   :type boolean))
- "A view is like a widget. It is the smallest unit of an UI.
+    :type boolean))
+  "A view is like a widget. It is the smallest unit of an UI.
 his class is an abstract class."
- :abstract t)
+  :abstract t)
 
 (cl-defmethod uikit-make-content ((view uikit-view))
  "Make content from data, returna a list of strings, each string is a line.
@@ -410,21 +409,25 @@ Each line must have same length and should not contain any return char."
  nil)
 
 (cl-defmethod uikit-make-content :around ((view uikit-view))
- "Make content if `content-changed' is t and return content,
-otherwise return cached content.
-Sets `content-changed', `width', `height', `content' slots."
- (if (content-changed-of view)
-     (let ((content (cl-call-next-method view)))
-       (setf (content-changed-of view) t
-             (width-of view) (length (car content))
-             (height-of view) (length content)
-             (content-of view) content))
-   (content-of view)))
+  "Make content if `content-changed' is t.
+This function returns the content just for usability.
+It's main job is to (potentially) update the content of VIEW.
+Instead, it sets `content-changed', `width', `height', `content' slots.
+So the specific `uikit-make-content' of each view class has to return their content."
+  (if (content-changed-of view)
+      (let ((content (cl-call-next-method view)))
+        (setf (content-changed-of view) t
+              (width-of view) (length (car content))
+              (height-of view) (length content)
+              (content-of view) content)) ; last val will be returned
+    ;; content not changed, just return it
+    (content-of view)))
 
 (cl-defmethod uikit-draw ((view uikit-view) &optional pos)
   "Draw the content on screen.
 
-Add properties: face, keymap, uikit-view, others in property-list."
+It just add properties: face, keymap, uikit-view, others in property-list,
+and then call `uikit-raw-draw'."
   ;; TOTEST
   (let ((content (uikit-make-content view))
         (all-property (append `(uikit-view ,view
@@ -436,10 +439,8 @@ Add properties: face, keymap, uikit-view, others in property-list."
         (pos (if pos
                  (get/set-pos-of view pos)
                (get/set-pos-of view))))
-    ;; measure line length by the first line of content.
-    (setq line-length (length (car content)))
     (dolist (line content)
-      (add-text-properties 0 line-length all-property line))
+      (add-text-properties 0 (length line) all-property line))
     (uikit-raw-draw content pos)))
 
 ;;;; Stack
@@ -579,9 +580,9 @@ Creates a buffer and segue to the entry scene."
  "A label is a one-line text.")
 
 (cl-defmethod uikit-make-content ((label uikit-label))
- "Return content of LABEL."
- ;; TOTEST
- (list (text-of label)))
+  "Return content of LABEL."
+  ;; TOTEST
+  (split-string (text-of label) "\n"))
 
 ;;;; Button
 
