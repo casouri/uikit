@@ -172,62 +172,62 @@ CONTENT is a list of strings. Generally you want to make them have same length."
     :type symbol)
    ;; not required in init
    (left
-    :accessor raw-left-of
+    :accessor uikit--raw-left-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the left of view and the left of scene.")
    (right
-    :accessor raw-right-of
+    :accessor uikit--raw-right-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the right of view and the right of scene.")
    (top
-    :accessor raw-top-of
+    :accessor uikit--raw-top-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the top of view and the top of scene.")
    (bottom
-    :accessor raw-bottom-of
+    :accessor uikit--raw-bottom-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the bottom of view and the bottom of scene.")
    (width
-    :accessor raw-width-of
+    :accessor uikit--raw-width-of
     :initform nil
     :type (or null integer)
     :documentation "The width.")
    (height
-    :accessor raw-height-of
+    :accessor uikit--raw-height-of
     :initform nil
     :type (or null integer)
     :documentation "The height.")
    (left-cache
-    :accessor left-cache-of
+    :accessor uikit--left-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `left' of the view during drawing process.")
    (right-cache
-    :accessor right-cache-of
+    :accessor uikit--right-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `right-cache' of the view during drawing process.")
    (top-cache
-    :accessor top-cache-of
+    :accessor uikit--top-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `top' of the view during drawing process.")
    (bottom-cache
-    :accessor bottom-cache-of
+    :accessor uikit--bottom-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `bottom' of the view during drawing process.")
    (width-cache
-    :accessor width-cache-of
+    :accessor uikit--width-cache-of
     :initform nil
     :type (or null integer)
     :documentation "The `width' cache.")
    (height-cache
-    :accessor height-cache-of
+    :accessor uikit--height-cache-of
     :initform nil
     :type (or null integer)
     :documentation "The `height' cache."))
@@ -274,11 +274,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-left-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-left-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (- (raw-right-of view) (raw-width-of view))
+              (- (uikit--raw-right-of view) (uikit--raw-width-of view))
             (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
 (defun right-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `right' slot.
@@ -289,11 +289,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-right-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-right-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (+ (raw-left-of view) (raw-width-of view))
+              (+ (uikit--raw-left-of view) (uikit--raw-width-of view))
             (error "Not enough constrain for %s. Cannot calculate right constrain of it" (id-of view)))))))
 (defun top-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `top' slot.
@@ -304,11 +304,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-top-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-top-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (- (raw-bottom-of view) (raw-height-of view))
+              (- (uikit--raw-bottom-of view) (uikit--raw-height-of view))
             (error "Not enough constrain for %s. Cannot calculate top constrain of it" (id-of view)))))))
 (defun bottom-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `bottom' slot.
@@ -319,11 +319,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-bottom-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-bottom-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (+ (raw-top-of view) (raw-height-of view))
+              (+ (uikit--raw-top-of view) (uikit--raw-height-of view))
             (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
 (defun width-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `width' slot.
@@ -334,11 +334,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-width-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-width-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (- (raw-right-of view) (raw-left-of view))
+              (- (uikit--raw-right-of view) (uikit--raw-left-of view))
             (error "Not enough constrain for %s. Cannot calculate width constrain of it" (id-of view)))))))
 (defun height-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `height' slot.
@@ -349,11 +349,11 @@ VALUE can be a positive integer or a (quoted) form.
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer."
   (if value
-      (setf (raw-height-of view) value)
-    (let ((raw-left (raw-left-of view)))
+      (setf (uikit--raw-height-of view) value)
+    (let ((raw-left (uikit--raw-left-of view)))
       (or raw-left
           (condition-case nil
-              (- (raw-bottom-of view) (raw-top-of view))
+              (- (uikit--raw-bottom-of view) (uikit--raw-top-of view))
             (error "Not enough constrain for %s. Cannot calculate height constrain of it" (id-of view)))))))
 
 ;;;;; Other Functions
