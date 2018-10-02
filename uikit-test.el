@@ -12,6 +12,38 @@
     (should-not (uikit--in 1 myrange t))
     (should-not (uikit--in 10 myrange nil t))))
 
+(ert-deftest uikit-gettter/setter ()
+  "Test automatically generated getter/setter."
+  (let ((button (make-instance 'uikit-button :id 'mybutton :text "my button")))
+    ;; normal setter & getter
+    (left-of button 10)
+    (right-of button 10)
+    (top-of button 10)
+    (bottom-of button 10)
+    (width-of button 10)
+    (height-of button 10)
+    (should (eq (left-of button) 10))
+    (should (eq (right-of button) 10))
+    (should (eq (top-of button) 10))
+    (should (eq (bottom-of button) 10))
+    (should (eq (width-of button) 10))
+    (should (eq (height-of button) 10))
+
+    ;; calculate one from the other two
+    (left-of button nil)
+    (right-of button nil)
+    (top-of button nil)
+    (bottom-of button nil)
+    (width-of button nil)
+    (height-of button nil)
+
+    (left-of button 10)
+    (right-of button 20)
+    (should (eq (width-of button) 10))
+
+    (top-of button 10)
+    (bottom-of button 20)
+    (should (eq (height-of button) 10))))
 
 (ert-deftest uikit-constrain-test-obsolute ()
   "Test of constrains."

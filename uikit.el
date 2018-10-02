@@ -161,9 +161,8 @@ CONTENT is a list of strings. Generally you want to make them have same length."
         (uikit-replace-with line point)
         (setq point (+ point window-width))))))
 
-;;; Base class
-
-;;;; Subview
+;;; Base Class
+;;;; Abstract View
 
 (defclass uikit-abstract-view ()
   (;; required in init
@@ -173,147 +172,191 @@ CONTENT is a list of strings. Generally you want to make them have same length."
     :type symbol)
    ;; not required in init
    (left
-    :accessor left-of
+    :accessor raw-left-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the left of view and the left of scene.")
    (right
-    :accessor right-of
+    :accessor raw-right-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the right of view and the right of scene.")
    (top
-    :accessor top-of
+    :accessor raw-top-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the top of view and the top of scene.")
    (bottom
-    :accessor bottom-of
+    :accessor raw-bottom-of
     :initform nil
     :type (or null integer)
     :documentation "Distance between the bottom of view and the bottom of scene.")
    (width
-    :accessor width-of
+    :accessor raw-width-of
     :initform nil
     :type (or null integer)
     :documentation "The width.")
    (height
-    :accessor height-of
+    :accessor raw-height-of
     :initform nil
     :type (or null integer)
-    :documentation "The height."))
+    :documentation "The height.")
+   (left-cache
+    :accessor left-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "Cache of `left' of the view during drawing process.")
+   (right-cache
+    :accessor right-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "Cache of `right-cache' of the view during drawing process.")
+   (top-cache
+    :accessor top-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "Cache of `top' of the view during drawing process.")
+   (bottom-cache
+    :accessor bottom-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "Cache of `bottom' of the view during drawing process.")
+   (width-cache
+    :accessor width-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "The `width' cache.")
+   (height-cache
+    :accessor height-cache-of
+    :initform nil
+    :type (or null integer)
+    :documentation "The `height' cache."))
   "Parent of `uikit-view' and `uikit-stack'.
 Both be a subview of one another."
   :abstract t)
 
-(cl-defmethod initialize-instance :after ((view uikit-abstract-view) &rest rest)
-  ;; TESTED
-  "Create getter&setter for left/right/top/bottom/width/height of VIEW.
+;;;;; Process :id
 
-They are named base on ID: e.g. ID.left / ID.right / etc
-ARGS are passed to `make-instance'."
-  (let ((id (symbol-name (plist-get rest :id))))
-    (when (member 'uikit-stack (eieio-class-parents (eieio-object-class view)))
-      ;; TOTEST
-      ;; stack.stack-style
-      (setf (symbol-function (intern (format "%s.stack-style" id)))
-            (eval `(lambda (&optional style)
-                     ,(format "Set/get stacking style of %s.
-If STYLE non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-                     (if style
-                         (setf (stack-style-of view) (if (eq style 'null) nil style))
-                       (stack-style-of view)))))
+(defsubst uikit-by-id (id)
+  "Return the view by ID."
+  (intern (format "uikit--id-%s" id)))
 
-      (setf (symbol-function (intern (format "%s.space" id)))
-            (eval `(lambda ()
-                     "Returns the length of the expected space between subviews."
-                     (let* ((subview-list (subview-list-of ,view))
-                            (id-list (mapcar 'id-of subview-list))
-                            (width-list (mapcar (lambda (id) (funcall (symbol-function (intern (format "%s.width" id)))))
-                                                id-list))
-                            (stack-width (funcall (symbol-function (intern (format "%s.width" ,id))))))
-                       (/ (- stack-width (apply '+ width-list)) (length subview-list)))))
-            ))
-    (setf
-     ;; view.left
-     (symbol-function (intern (format "%s.left" id)))
-     (eval `(lambda (&optional left)
-              ,(format "Set/get LEFT of %s.
-If LEFT non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if left
-                  (setf (left-of ,view) (if (eq left 'null) nil
-                                          left))
-                (or (left-of ,view)
-                    (condition-case nil
-                        (- (right-of ,view) (width-of ,view))
-                      (error nil))))))
-     ;; view.right
-     (symbol-function (intern (format "%s.right" id)))
-     (eval `(lambda (&optional right)
-              ,(format "Set/get RIGHT of %s.
-If RIGHT non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if right
-                  (setf (right-of ,view) (if (eq right 'null) nil
-                                           right))
-                (or (right-of ,view)
-                    (condition-case nil
-                        (+ (left-of ,view) (width-of ,view))
-                      (error nil))))))
-     ;; view.top
-     (symbol-function (intern (format "%s.top" id)))
-     (eval `(lambda (&optional top)
-              ,(format "Set/get TOP of %s.
-If TOP non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if top
-                  (setf (top-of ,view) (if (eq top 'null) nil
-                                         top))
-                (or (top-of ,view)
-                    (condition-case nil
-                        (- (bottom-of ,view) (height-of ,view))
-                      (error nil))))))
-     ;; view.bottom
-     (symbol-function (intern (format "%s.bottom" id)))
-     (eval `(lambda (&optional bottom)
-              ,(format "Set/get BOTTOM of %s.
-nnnIf BOTTOM non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if bottom
-                  (setf (bottom-of ,view) (if (eq bottom 'null) nil
-                                            bottom))
-                (or (bottom-of ,view)
-                    (condition-case nil
-                        (+ (top-of ,view) (height-of ,view))
-                      (error nil))))))
-     ;; view.width
-     (symbol-function (intern (format "%s.width" id)))
-     (eval `(lambda (&optional width)
-              ,(format "Set/get WIDTH of %s.
-If WIDTH non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if width
-                  (setf (width-of ,view) (if (eq width 'null) nil
-                                           width))
-                (or (width-of ,view)
-                    (condition-case nil
-                        (- (right-of ,view) (left-of ,view))
-                      (error nil))))))
-     ;; view.height
-     (symbol-function (intern (format "%s.height" id)))
-     (eval `(lambda (&optional height)
-              ,(format "Set/get HEIGHT of %s.
-If HEIGHT non-nil, set; otherwise get.
-To set to nil, use symbol 'null." id)
-              (if height
-                  (setf (height-of ,view) (if (eq height 'null) nil
-                                            height))
-                (or (height-of ,view)
-                    (condition-case nil
-                        (- (bottom-of ,view) (top-of ,view))
-                      (error nil)))))))))
+(defmethod initialize-instanc :after ((view uikit-abstract-view) &rest rest)
+  "Process the :id key. Create a variable `uikit--id-ID' as an alias of the view.
+e.g. uikit--id-mybutton for id \"mybutton\"."
+  (setf (intern (format "uikit--id-%s" id)) view))
+
+;;;;; Universal Accessor: Getter & Setter
+
+(defsubst dimension-of (view dimension &optional value)
+  "Get/set DIMENSION of VIEW.
+
+If VALUE non-nil, set, otherwise get.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer.
+
+Normally you want to just use `left/right/...-of' accessors,
+this function is used by stack during auto layout
+because they needs to change left/right/.../ base on their direction."
+  (funcall (intern (format "%s-of" (symbol-name dimension))) view value))
+
+
+;;;;; Special Accessor for View's Dimension
+
+(defun left-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `left' slot.
+If `left' slot is nil, calculate by `right' and `width'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-left-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (- (raw-right-of view) (raw-width-of view))
+            (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
+(defun right-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `right' slot.
+If `right' slot is nil, calculate by `left' and `width'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-right-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (+ (raw-left-of view) (raw-width-of view))
+            (error "Not enough constrain for %s. Cannot calculate right constrain of it" (id-of view)))))))
+(defun top-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `top' slot.
+If `top' slot is nil, calculate by `bottom' and `width'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-top-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (- (raw-bottom-of view) (raw-height-of view))
+            (error "Not enough constrain for %s. Cannot calculate top constrain of it" (id-of view)))))))
+(defun bottom-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `bottom' slot.
+If `bottom' slot is nil, calculate by `top' and `width'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-bottom-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (+ (raw-top-of view) (raw-height-of view))
+            (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
+(defun width-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `width' slot.
+If `width' slot is nil, calculate by `left' and `right'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-width-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (- (raw-right-of view) (raw-left-of view))
+            (error "Not enough constrain for %s. Cannot calculate width constrain of it" (id-of view)))))))
+(defun height-of (view &optional value)
+  "Takes any VIEW of `abstract-view' class and return its `height' slot.
+If `height' slot is nil, calculate by `left' and `bottom'.
+Set the slot to VALUE when VALUE non-nil.
+VALUE can be a positive integer or a (quoted) form.
+
+Form will be evaluated to get a number during drawing of VIEW,
+make sure it returns a positive integer."
+  (if value
+      (setf (raw-height-of view) value)
+    (let ((raw-left (raw-left-of view)))
+      (or raw-left
+          (condition-case nil
+              (- (raw-bottom-of view) (raw-top-of view))
+            (error "Not enough constrain for %s. Cannot calculate height constrain of it" (id-of view)))))))
+
+;;;;; Other Functions
 
 (defun uikit-attribute-by-id (id attribute &optional value)
   "Get or set ATTRIBUTE of view with id ID.
