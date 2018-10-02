@@ -115,14 +115,14 @@ WIDTH and HEIGHT are optional."
       (dotimes (_ (- height (line-number-at-pos (point) t)))
         (insert (make-string (1- width) ?\s) ?\n)))))
 
-(defsubst uikit-append (seq elt)
+(defsubst uikit--append (seq elt)
   ;; TOTEST
   "Append ELT to SEQ destructivly. This is a macro."
   (if seq
       (nconc seq (list elt))
     (setq seq (list elt))))
 
-(defsubst uikit-push (elt seq)
+(defsubst uikit--push (elt seq)
   ;; TOTEST
   "Push ELT to SEQ destructivly. This is a macro."
   (if seq
