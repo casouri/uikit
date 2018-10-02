@@ -374,8 +374,8 @@ If POS non-nil set instead of get."
   (if pos
       (let ((x (uikit-pos-x pos))
             (y (uikit-pos-x pos)))
-        (setf (left-of view) x
-              (top-of view) y)
+        (setf (uikit--raw-left-of view) x
+              (uikit--raw-top-of view) y)
         ;; return pos
         pos)
     (let ((x (uikit-attribute-by-id (id-of view) 'left))
@@ -459,8 +459,8 @@ So the specific `uikit-make-content' of each view class has to return their cont
   (if (uikit--content-changed-of view)
       (let ((content (cl-call-next-method view)))
         (setf (uikit--content-changed-of view) t
-              (width-of view) (length (car content))
-              (height-of view) (length content)
+              (uikit--raw-width-of view) (length (car content))
+              (uikit--raw-height-of view) (length content)
               (uikit--content-of view) content)) ; last val will be returned
     ;; content not changed, just return it
     (uikit--content-of view)))
