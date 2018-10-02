@@ -248,8 +248,8 @@ e.g. uikit--id-mybutton for id \"mybutton\"."
 
 ;;;;; Universal Accessor: Getter & Setter
 
-(defsubst dimension-of (view dimension &optional value)
-  "Get/set DIMENSION of VIEW.
+(defsubst constrain-of (view constrain &optional value)
+  "Get/set CONSTRAIN of VIEW.
 
 If VALUE non-nil, set, otherwise get.
 VALUE can be a positive integer or a (quoted) form.
@@ -260,10 +260,10 @@ make sure it returns a positive integer.
 Normally you want to just use `left/right/...-of' accessors,
 this function is used by stack during auto layout
 because they needs to change left/right/.../ base on their direction."
-  (funcall (intern (format "%s-of" (symbol-name dimension))) view value))
+  (funcall (intern (format "%s-of" (symbol-name constrain))) view value))
 
 
-;;;;; Special Accessor for View's Dimension
+;;;;; Special Accessor for View's Constrain
 
 (defun left-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `left' slot.
