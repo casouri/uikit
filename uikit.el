@@ -678,7 +678,7 @@ It can be either a symbol or a lambda.")
         (append `(help-echo ,(uikit--help-of button) mouse-face uikit-mouse-face) (uikit--property-list-of button))))
 
 
-(defun uikit-button-click ()
+(defun uikit-button-clicked ()
   "Button clicked by user."
   (interactive)
   (message "Button pressed"))
