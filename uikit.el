@@ -168,8 +168,9 @@ CONTENT is a list of strings. Generally you want to make them have same length."
   (;; required in init
    (id
     :initarg :id
-    :documentation "The identification of this view. Should be a symbol."
-    :type symbol)
+    :accessor uikit--id-of
+    :documentation "The identification of this view. Should be a string."
+    :type string)
    ;; not required in init
    (left
     :accessor uikit--raw-left-of
@@ -241,10 +242,11 @@ Both be a subview of one another."
   "Return the view by ID."
   (intern (format "uikit--id-%s" id)))
 
-(defmethod initialize-instanc :after ((view uikit-abstract-view) &rest rest)
+(cl-defmethod initialize-instance :after ((view uikit-abstract-view) &rest rest)
   "Process the :id key. Create a variable `uikit--id-ID' as an alias of the view.
 e.g. uikit--id-mybutton for id \"mybutton\"."
-  (setf (intern (format "uikit--id-%s" id)) view))
+  (setf (symbol-value (intern (format "uikit--id-%s" (uikit--id-of view))))
+        view))
 
 ;;;;; Universal Accessor: Getter & Setter
 
