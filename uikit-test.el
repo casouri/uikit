@@ -12,7 +12,8 @@
     (should-not (uikit--in 1 myrange t))
     (should-not (uikit--in 10 myrange nil t))))
 
-(ert-deftest uikit-constrain-test ()
+
+(ert-deftest uikit-constrain-test-obsolute ()
   "Test of constrains."
   (let ((stack (make-instance 'uikit-stack))
         (label0 (make-instance 'uikit-label :text "Label 0"))
@@ -26,7 +27,7 @@
                                       (subview2-top <- parent-top)
                                       (subview2-left <- subview1-right)))))
 
-(ert-deftest uikit-pos-of ()
+(ert-deftest uikit-pos-of-obsolute ()
   "Test of `pos-of'."
   (let ((view (make-instance 'uikit-button))
         pos)
@@ -67,7 +68,7 @@
     (should-error (pos-of view))))
 
 
-(ert-deftest uikit-gettter/setter ()
+(ert-deftest uikit-gettter/setter-obsolute ()
   "Test automatically generated getter/setter."
   (let ((button (make-instance 'uikit-button :id 'mybutton :text "my button")))
     ;; normal setter & getter
