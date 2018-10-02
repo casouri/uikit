@@ -115,19 +115,19 @@ WIDTH and HEIGHT are optional."
       (dotimes (_ (- height (line-number-at-pos (point) t)))
         (insert (make-string (1- width) ?\s) ?\n)))))
 
-(defmacro uikit-append (seq elt)
+(defsubst uikit-append (seq elt)
   ;; TOTEST
   "Append ELT to SEQ destructivly. This is a macro."
-  `(if ,seq
-       (nconc ,seq (list ,elt))
-     (setq ,seq (list ,elt))))
+  (if seq
+      (nconc seq (list elt))
+    (setq seq (list elt))))
 
-(defmacro uikit-push (elt seq)
+(defsubst uikit-push (elt seq)
   ;; TOTEST
   "Push ELT to SEQ destructivly. This is a macro."
-  `(if ,seq
-       (push ,elt ,seq)
-     (setq ,seq (list ,elt))))
+  (if seq
+      (push elt seq)
+    (setq seq (list elt))))
 
 (defun uikit-replace-with (str beg)
   "Replace strings between BEG and (+ BEG (length STR)) with STR."
