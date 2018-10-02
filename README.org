@@ -14,14 +14,14 @@ There are only label and button available, because I want to make auto layout wo
 #+BEGIN_SRC emacs-lisp
 ;; M-x eval-buffer or load uikit.el
 ;; create a button
-(setq mybutton (make-instance 'uikit-button :id 'mybutton))
+(make-instance 'uikit-button :id "myapp-mybutton" :text "MYBUTTON")
 ;; create a position
 (setq mypos (make-uikit-pos :x 20 :y 10))
 ;; make a new buffer and prepare canvas
-(switch-to-buffer (get-buffer-create "test"))
+(switch-to-buffer (get-buffer-create "TEST"))
 (uikit-prepare-canvas)
 ;; draw the button
-(uikit-draw mybutton mypos)
+(uikit-draw uikit--id-myapp-mybutton mypos)
 ;; you should be able to see a button
 #+END_SRC
 
