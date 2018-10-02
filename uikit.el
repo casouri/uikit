@@ -384,7 +384,7 @@ If POS non-nil set instead of get."
 
 (defclass uikit-view (uikit-abstract-view)
   ((face
-    :accessor face-of
+    :accessor uikit--face-of
     :initarg :face
     :initform nil
     :documentation "The face used for this view. Default to nil.
@@ -392,13 +392,13 @@ You can set face by property list but this is more convenient.
 face in property list will override this. "
     :type (or null (satisfies facep)))
    (pad-char
-    :accessor pad-char-of
+    :accessor uikit--pad-char-of
     :initarg :pad-char
     :initform (eval uikit-pad-char)
     :documentation "The char used to pad extra space."
     :type character)
    (keymap
-    :accessor keymap-of
+    :accessor uikit--keymap-of
     :initarg :keymap
     :initform nil
     :documentation "Keymap on the view
@@ -408,7 +408,7 @@ TODO Does keymap in property list override this?
 "
     :type (or null (satisfies keymapp)))
    (property-list
-    :accessor property-list-of
+    :accessor uikit--property-list-of
     :initarg :property-list
     :initform nil
     :documentation "Extra text properties that you want to put to view text.
@@ -419,19 +419,19 @@ each element of the list is an cons of PROPERTY and VALUE that are eligibel for 
    ;; content
 
    (content
-    :accessor content-of
+    :accessor uikit--content-of
     :initform ()
     :documentation "The actual text that is drew to canvas, cached for later use.
 But it doesn't include the padding spaces around, since size might
 change more frequent that the content. See `padded-content'.
 It is a list of strings, each string is a line.")
    (padded-content
-    :accessor padded-content-of
+    :accessor uikit--padded-content-of
     :initform ()
     :documentation "The actual text that is drew on canvas, with padded space.
 It is a list for the same reason as `content'.")
    (content-changed
-    :accessor content-changed-of
+    :accessor uikit--content-changed-of
     :initform t
     :documentation "If this is t, then content needs to be recalculated.
 Everythime a change that alters the visual appearance of the view is made,
@@ -454,14 +454,14 @@ This function returns the content just for usability.
 It's main job is to (potentially) update the content of VIEW.
 Instead, it sets `content-changed', `width', `height', `content' slots.
 So the specific `uikit-make-content' of each view class has to return their content."
-  (if (content-changed-of view)
+  (if (uikit--content-changed-of view)
       (let ((content (cl-call-next-method view)))
-        (setf (content-changed-of view) t
+        (setf (uikit--content-changed-of view) t
               (width-of view) (length (car content))
               (height-of view) (length content)
-              (content-of view) content)) ; last val will be returned
+              (uikit--content-of view) content)) ; last val will be returned
     ;; content not changed, just return it
-    (content-of view)))
+    (uikit--content-of view)))
 
 (cl-defmethod uikit-draw ((view uikit-view) &optional pos)
   "Draw the content on screen.
@@ -471,9 +471,9 @@ and then call `uikit-raw-draw'."
   ;; TOTEST
   (let ((content (uikit-make-content view))
         (all-property (append `(uikit-view ,view
-                                           face ,(face-of view)
-                                           keymap ,(keymap-of view))
-                              (property-list-of view)))
+                                           face ,(uikit--face-of view)
+                                           keymap ,(uikit--keymap-of view))
+                              (uikit--property-list-of view)))
         line-length
         (inhibit-modification-hooks t)
         (pos (if pos
@@ -486,68 +486,68 @@ and then call `uikit-raw-draw'."
 ;;;; Stack
 
 (defclass uikit-stack (uikit-abstract-view)
- ((subview-list
-   :accessor subview-list-of
-   :initarg :subview-list
-   :initform nil
-   :documentation "List of subviews of the stack view.")
-  (stack-style
-   :accessor stack-style-of
-   :initarg :stack-style
-   :initform 'stack
-   :documentation "Determins how does stack \"stack\" subviews together.
+  ((subview-list
+    :accessor uikit--subview-list-of
+    :initarg :subview-list
+    :initform nil
+    :documentation "List of subviews of the stack view.")
+   (stack-style
+    :accessor uikit--stack-style-of
+    :initarg :stack-style
+    :initform 'stack
+    :documentation "Determins how does stack \"stack\" subviews together.
 It can be 'stack, 'equal-space or 'portion."
-   :type symbol)
-  (portion-plist
-   :accessor portion-plist-of
-   :initform nil
-   :documentation "A plist of subview id and their portion in stack.
+    :type symbol)
+   (portion-plist
+    :accessor uikit--portion-plist-of
+    :initform nil
+    :documentation "A plist of subview id and their portion in stack.
 Only takes effect if stack-style of the stack is 'portion.this is not good, this is too slow."))
- "Stack view, used for grouping multiple view together and arrage their position automatically.")
+  "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
 (cl-defmethod uikit-make-content ((stack uikit-stack))
- "STACK make content by asking its subviews to make content."
- ;; TOTEST
- (dolist (subview (subview-list-of stack))
-   (uikit-make-content subview)))
+  "STACK make content by asking its subviews to make content."
+  ;; TOTEST
+  (dolist (subview (uikit--subview-list-of stack))
+    (uikit-make-content subview)))
 
 (cl-defmethod uikit-quit ((stack uikit-stack))
- "Quit stack and set all subviews to nil."
- ;; TODO not finished
- (dolist (subview (subview-list-of stack))
-   (uikit-quit subview))
- (setf stack nil))
+  "Quit stack and set all subviews to nil."
+  ;; TODO not finished
+  (dolist (subview (uikit--subview-list-of stack))
+    (uikit-quit subview))
+  (setf stack nil))
 
 
 ;;;; Scene
 
 (defclass uikit-scene (uikit-stack)
- ((name
-   :initarg :name
-   :initform "*UIKit Abstract Scene*"
-   :accessor name-of
-   :documentation "The name of this scene."
-   :type string)
-  (buffer
-   :initform nil
-   :accessor buffer-of
-   :documentation "The buffer in where the scene is displayed."
-   :type (or null buffer))
-  (constrain-list
-   :initform nil
-   :accessor constrain-list-of
-   :documentation "All of the constrains of the subiews of this scene."))
- ;; abstract
- "A scene is like a web page."
- :abstract t)
+  ((name
+    :initarg :name
+    :initform "*UIKit Abstract Scene*"
+    :accessor uikit--name-of
+    :documentation "The name of this scene."
+    :type string)
+   (buffer
+    :initform nil
+    :accessor uikit--buffer-of
+    :documentation "The buffer in where the scene is displayed."
+    :type (or null buffer))
+   (constrain-list
+    :initform nil
+    :accessor uikit--constrain-list-of
+    :documentation "All of the constrains of the subiews of this scene."))
+  ;; abstract
+  "A scene is like a web page."
+  :abstract t)
 
 (cl-defmethod make-instance :after ((scene uikit-scene) &key)
- "Create buffer for scene."
- (setf (buffer-of scene)
-       (let ((buffer (get-buffer-create (name-of scene))))
-         (with-current-buffer buffer
-           (setq uikit-buffer-scene scene))
-         buffer)))
+  "Create buffer for scene."
+  (setf (uikit--buffer-of scene)
+        (let ((buffer (get-buffer-create (uikit--name-of scene))))
+          (with-current-buffer buffer
+            (setq uikit-buffer-scene scene))
+          buffer)))
 
 (defun uikit-configure-constrain (scene)
   ;; TODO
@@ -562,7 +562,7 @@ Only takes effect if stack-style of the stack is 'portion.this is not good, this
   "Find the entry by LEFT side in constrain-list of STACK.
 nil if none found."
   (catch 'return
-    (dolist (entry (constrain-list-of stack))
+    (dolist (entry (uikit--constrain-list-of stack))
       (when (equal (car entry) left)
         (throw 'return entry)))))
 
@@ -580,22 +580,22 @@ position automatically by its stacking style.
   ((name
     :initarg :name
     :initform "An App"
-    :accessor name-of
+    :accessor uikit--name-of
     :documentation "The name of the app."
     :type string)
    (scene-ring
     :initform nil
-    :accessor scene-ring-of
+    :accessor uikit--scene-ring-of
     :documentation "The ring of scenes.")
    (current-scene
     :initform nil
-    :accessor current-scene-of
+    :accessor uikit--current-scene-of
     :documentation "The current scene of the app."
     :type (or null uikit-scene))
    (entry-scene
     :initarg entry-scene
     :initform nil
-    :accessor entry-scene-of
+    :accessor uikit--entry-scene-of
     :documentation "A subclass of `uikit-scene'."))
   "An app is made of a set of related scenes. Subclass it."
   :abstract t)
@@ -611,18 +611,18 @@ Creates a buffer and segue to the entry scene."
 ;;;; Label
 
 (defclass uikit-label (uikit-view)
- ((text
-   :initarg :text
-   :accessor text-of
-   :initform "Text"
-   :documentation "The text of label."
-   :type string))
- "A label is a one-line text.")
+  ((text
+    :initarg :text
+    :accessor uikit--text-of
+    :initform "Text"
+    :documentation "The text of label."
+    :type string))
+  "A label is a one-line text.")
 
 (cl-defmethod uikit-make-content ((label uikit-label))
   "Return content of LABEL."
   ;; TOTEST
-  (split-string (text-of label) "\n"))
+  (split-string (uikit--text-of label) "\n"))
 
 ;;;; Button
 
@@ -632,31 +632,31 @@ Creates a buffer and segue to the entry scene."
    (mouse-1-func
     :initarg :mouse-1-func
     :initform 'uikit-button-clicked
-    :accessor mouse-1-func-of
+    :accessor uikit--mouse-1-func-of
     :documentation "The function invoked when mouse-1 clicked on the button.
 It can be either a symbol or a lambda.")
    (mouse-2-func
     :initarg :mouse-2-func
     :initform 'uikit-button-clicked
-    :accessor mouse-2-func-of
+    :accessor uikit--mouse-2-func-of
     :documentation "The function invoked when mouse-2 clicked on the button.
 It can be either a symbol or a lambda.")
    (mouse-3-func
     :initarg :mouse-3-func
     :initform 'uikit-button-clicked
-    :accessor mouse-3-func-of
+    :accessor uikit--mouse-3-func-of
     :documentation "The function invoked when mouse-3 clicked on the button.
 It can be either a symbol or a lambda.")
    (return-func
     :initarg :return-func
     :initform 'uikit-button-clicked
-    :accessor return-func-of
+    :accessor uikit--return-func-of
     :documentation "The function invoked when RET clicked on the button.
 It can be either a symbol or a lambda.")
    (help
     :initarg :help
     :initform "Click"
-    :accessor help-of
+    :accessor uikit--help-of
     :documentation "This is displayed when mouse is on button."
     :type string))
   "A button.")
@@ -665,15 +665,15 @@ It can be either a symbol or a lambda.")
 (cl-defmethod initialize-instance :after ((button uikit-button) &rest _)
   "Add help to properties."
   ;; TOTEST
-  (setf (keymap-of button) (let ((map (make-sparse-keymap)))
-                             (define-key map (kbd "<mouse-1>") (mouse-1-func-of button))
-                             (define-key map (kbd "<mouse-2>") (mouse-2-func-of button))
-                             (define-key map (kbd "<mouse-3>") (mouse-3-func-of button))
-                             (define-key map (kbd "<return>") (return-func-of button))
-                             map))
-  (setf (face-of button) 'uikit-button-face)
-  (setf (property-list-of button)
-        (append `(help-echo ,(help-of button) mouse-face uikit-mouse-face) (property-list-of button))))
+  (setf (uikit--keymap-of button) (let ((map (make-sparse-keymap)))
+                                    (define-key map (kbd "<mouse-1>") (uikit--mouse-1-func-of button))
+                                    (define-key map (kbd "<mouse-2>") (uikit--mouse-2-func-of button))
+                                    (define-key map (kbd "<mouse-3>") (uikit--mouse-3-func-of button))
+                                    (define-key map (kbd "<return>") (uikit--return-func-of button))
+                                    map))
+  (setf (uikit--face-of button) 'uikit-button-face)
+  (setf (uikit--property-list-of button)
+        (append `(help-echo ,(uikit--help-of button) mouse-face uikit-mouse-face) (uikit--property-list-of button))))
 
 
 (defun uikit-button-click ()
