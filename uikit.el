@@ -35,16 +35,16 @@
 (defvar-local uikit-buffer-scene nil
   "The scene of this buffer.")
 
-;;; Base structs
+;;; Base Structs
 
 (cl-defstruct uikit-pos
- "Represents a position in cavas.
+  "Represents a position in cavas.
 both x and y are zero based.
 Note that the length of the unit in y direction is about two times as
 the unit in x direction.
 For example (20, 10) nearly forms a square."
- (x 0)
- (y 0))
+  (x 0)
+  (y 0))
 
 (cl-defmethod uikit-pos+ ((pos uikit-pos) (offset uikit-pos))
   "Add OFFSET to POS destructivly. Return the modified POS."
@@ -95,7 +95,7 @@ else is  for MAX-EXCLUSIVE."
         t
       nil)))
 
-;;; Base function
+;;; Base Function
 
 (defun uikit-prepare-canvas (&optional width height)
   "Prepare the canvas by inserting spaces.
