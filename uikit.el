@@ -169,7 +169,10 @@ CONTENT is a list of strings. Generally you want to make them have same length."
    (id
     :initarg :id
     :accessor uikit--id-of
-    :documentation "The identification of this view. Should be a string."
+    :documentation "The identification of this view. Should be a string.
+Uikit creates a variable`uikit--id-ID' for the view,
+so make sure to include app name as prefix to avoid name clash.
+(Yeah you never escape from prefix)"
     :type string)
    ;; not required in init
    (left
