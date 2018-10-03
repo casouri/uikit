@@ -270,7 +270,7 @@ because they needs to change left/right/.../ base on their direction."
 
 ;;;;; Special Accessor for View's Constrain
 
-(defun left-of (view &optional value)
+(defun uikit-left-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `left' slot.
 If `left' slot is nil, calculate by `right' and `width'.
 Set the slot to VALUE when VALUE non-nil.
@@ -285,7 +285,7 @@ make sure it returns a positive integer."
           (condition-case nil
               (- (uikit--raw-right-of view) (uikit--raw-width-of view))
             (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
-(defun right-of (view &optional value)
+(defun uikit-right-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `right' slot.
 If `right' slot is nil, calculate by `left' and `width'.
 Set the slot to VALUE when VALUE non-nil.
@@ -300,7 +300,7 @@ make sure it returns a positive integer."
           (condition-case nil
               (+ (uikit--raw-left-of view) (uikit--raw-width-of view))
             (error "Not enough constrain for %s. Cannot calculate right constrain of it" (id-of view)))))))
-(defun top-of (view &optional value)
+(defun uikit-top-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `top' slot.
 If `top' slot is nil, calculate by `bottom' and `width'.
 Set the slot to VALUE when VALUE non-nil.
@@ -315,7 +315,7 @@ make sure it returns a positive integer."
           (condition-case nil
               (- (uikit--raw-bottom-of view) (uikit--raw-height-of view))
             (error "Not enough constrain for %s. Cannot calculate top constrain of it" (id-of view)))))))
-(defun bottom-of (view &optional value)
+(defun uikit-bottom-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `bottom' slot.
 If `bottom' slot is nil, calculate by `top' and `width'.
 Set the slot to VALUE when VALUE non-nil.
@@ -330,7 +330,7 @@ make sure it returns a positive integer."
           (condition-case nil
               (+ (uikit--raw-top-of view) (uikit--raw-height-of view))
             (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
-(defun width-of (view &optional value)
+(defun uikit-width-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `width' slot.
 If `width' slot is nil, calculate by `left' and `right'.
 Set the slot to VALUE when VALUE non-nil.
@@ -345,7 +345,7 @@ make sure it returns a positive integer."
           (condition-case nil
               (- (uikit--raw-right-of view) (uikit--raw-left-of view))
             (error "Not enough constrain for %s. Cannot calculate width constrain of it" (id-of view)))))))
-(defun height-of (view &optional value)
+(defun uikit-height-of (view &optional value)
   "Takes any VIEW of `abstract-view' class and return its `height' slot.
 If `height' slot is nil, calculate by `left' and `bottom'.
 Set the slot to VALUE when VALUE non-nil.
