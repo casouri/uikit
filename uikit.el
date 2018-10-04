@@ -199,30 +199,6 @@ so make sure to include app name as prefix to avoid name clash.
     :accessor uikit--raw-height-of
     :initform nil
     :documentation "The height of view. Can be positive integer of (lambda (view)).")
-   (compiled-left
-    :accessor uikit--compile-left-of
-    :initform nil
-    :documentation "Byte compiled function that returns left of view.")
-   (compiled-right
-    :accessor uikit--compiled-right-of
-    :initform nil
-    :documentation "Byte compiled function that returns right of view.")
-   (compiled-top
-    :accessor uikit--compiled-top-of
-    :initform nil
-    :documentation "Byte compiled function that returns top of view.")
-   (compiled-bottom
-    :accessor uikit--compiled-bottom-of
-    :initform nil
-    :documentation "Byte compiled function that returns bottom of view.")
-   (compiled-width
-    :accessor uikit--compiled-width-of
-    :initform nil
-    :documentation "Byte compiled function that returns width of view.")
-   (compiled-height
-    :accessor uikit--compiled-height-of
-    :initform nil
-    :documentation "Byte compiled function that returns height of view.")
    (left-cache
     :accessor uikit--left-cache-of
     :initform nil
