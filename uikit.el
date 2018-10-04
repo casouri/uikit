@@ -421,6 +421,13 @@ overwrites face and keymap slot.
 each element of the list is an cons of PROPERTY and VALUE that are eligibel for `put-text-property'."
     :type (or null list))
 
+   ;; drawing
+   (parent-stack
+    :accessor uikit--parent-stack-of
+    :initform nil
+    :documentation "The parent stack of this view.
+Used to check if the view is within the stack on screen.")
+
    ;; content
 
    (content
@@ -496,18 +503,39 @@ and then call `uikit-raw-draw'."
     :initarg :subview-list
     :initform nil
     :documentation "List of subviews of the stack view.")
-   (stack-style
-    :accessor uikit--stack-style-of
-    :initarg :stack-style
-    :initform 'stack
-    :documentation "Determins how does stack \"stack\" subviews together.
-It can be 'stack, 'equal-space or 'portion."
-    :type symbol)
-   (portion-plist
-    :accessor uikit--portion-plist-of
+   (autolayout
+    :accessor uikit--autolayout-of
+    :initarg :autolayout
     :initform nil
-    :documentation "A plist of subview id and their portion in stack.
-Only takes effect if stack-style of the stack is 'portion.this is not good, this is too slow."))
+    :documentation "Determins how does stack \"stack\" subviews together.
+It can be nil, 'stacking, 'equal-spacing, 'portion."
+    :type symbol)
+   (equal-spacing-space
+    :accessor uikit--stacking-space-of
+    :initform 0
+    :type integer
+    :documentation "Spacing between subviews when using 'stacking auatolayout.")
+   (v-align
+    :accessor uikit--v-align-of
+    :initform 'top
+    :type symbol
+    :documentation "Vertical alignment of subviews. Can be 'top, 'center, 'bottom.
+Only take effect when `autolayout' is non-nil.")
+   (portion-list
+    :accessor uikit--portion-list-of
+    :initform nil
+    :documentation "A list of portions of subviews in stack in order when using 'portion autolayout.")
+   (max-subview-height
+    :accessor uikit--max-subview-height
+    :initform (byte-compile (lambda (stack) (cl-reduce
+                                             '+
+                                             (mapcar 'uikit--height-of
+                                                     (uikit--subview-list-of stack)))))
+    :documentation "The height of the tallest subview in stack.")
+   (max-subview-height-cache
+    :accessor uikit--max-subview-height-cache
+    :initform nil
+    :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
 (cl-defmethod uikit-make-content ((stack uikit-stack))
@@ -561,23 +589,14 @@ Only takes effect if stack-style of the stack is 'portion.this is not good, this
 
 ;;;;; Constrain
 
-;;;;;; Main function
+;;;;;; Auto Layout
 
-(defun uikit-constrain-find-entry (left stack)
-  "Find the entry by LEFT side in constrain-list of STACK.
-nil if none found."
-  (catch 'return
-    (dolist (entry (uikit--constrain-list-of stack))
-      (when (equal (car entry) left)
-        (throw 'return entry)))))
-
-
-(defun uikit-configure-stack-auto-constrain (scene)
-  "Let each stack of SCENE configure its subviews
-position automatically by its stacking style.
-\stack, equal-space, portion\)"
-  ;; TODO
-  )
+(defun uikit-autolayout (stack)
+  "Ask STACK to auto layout."
+  (if (uikit-width-of stack)
+      ;; if there is a stack, the stack is fixed size
+      ;; therefore is not stacking but equal space
+      ))
 
 ;;;; App
 
