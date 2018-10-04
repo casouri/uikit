@@ -181,27 +181,27 @@ so make sure to include app name as prefix to avoid name clash.
    (left
     :accessor uikit--raw-left-of
     :initform nil
-    :documentation "The left of view. Can be positive integer of (lambda (view)).")
+    :documentation "The left of view. Can be positive integer of (lambda (SELF)).")
    (right
     :accessor uikit--raw-right-of
     :initform nil
-    :documentation "The right of view. Can be positive integer of (lambda (view)).")
+    :documentation "The right of view. Can be positive integer of (lambda (SELF)).")
    (top
     :accessor uikit--raw-top-of
     :initform nil
-    :documentation "The top of view. Can be positive integer of (lambda (view)).")
+    :documentation "The top of view. Can be positive integer of (lambda (SELF)).")
    (bottom
     :accessor uikit--raw-bottom-of
     :initform nil
-    :documentation "The bottom of view. Can be positive integer of (lambda (view)).")
+    :documentation "The bottom of view. Can be positive integer of (lambda (SELF)).")
    (width
     :accessor uikit--raw-width-of
     :initform nil
-    :documentation "The width of view. Can be positive integer of (lambda (view)).")
+    :documentation "The width of view. Can be positive integer of (lambda (SELF)).")
    (height
     :accessor uikit--raw-height-of
     :initform nil
-    :documentation "The height of view. Can be positive integer of (lambda (view)).")
+    :documentation "The height of view. Can be positive integer of (lambda (SELF)).")
    (left-cache
     :accessor uikit--left-cache-of
     :initform nil
