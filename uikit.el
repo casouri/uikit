@@ -178,33 +178,51 @@ so make sure to include app name as prefix to avoid name clash.
    (left
     :accessor uikit--raw-left-of
     :initform nil
-    :type (or null integer)
-    :documentation "Distance between the left of view and the left of scene.")
+    :documentation "The left of view. Can be positive integer of (lambda (view)).")
    (right
     :accessor uikit--raw-right-of
     :initform nil
-    :type (or null integer)
-    :documentation "Distance between the right of view and the right of scene.")
+    :documentation "The right of view. Can be positive integer of (lambda (view)).")
    (top
     :accessor uikit--raw-top-of
     :initform nil
-    :type (or null integer)
-    :documentation "Distance between the top of view and the top of scene.")
+    :documentation "The top of view. Can be positive integer of (lambda (view)).")
    (bottom
     :accessor uikit--raw-bottom-of
     :initform nil
-    :type (or null integer)
-    :documentation "Distance between the bottom of view and the bottom of scene.")
+    :documentation "The bottom of view. Can be positive integer of (lambda (view)).")
    (width
     :accessor uikit--raw-width-of
     :initform nil
-    :type (or null integer)
-    :documentation "The width.")
+    :documentation "The width of view. Can be positive integer of (lambda (view)).")
    (height
     :accessor uikit--raw-height-of
     :initform nil
-    :type (or null integer)
-    :documentation "The height.")
+    :documentation "The height of view. Can be positive integer of (lambda (view)).")
+   (compiled-left
+    :accessor uikit--compile-left-of
+    :initform nil
+    :documentation "Byte compiled function that returns left of view.")
+   (compiled-right
+    :accessor uikit--compiled-right-of
+    :initform nil
+    :documentation "Byte compiled function that returns right of view.")
+   (compiled-top
+    :accessor uikit--compiled-top-of
+    :initform nil
+    :documentation "Byte compiled function that returns top of view.")
+   (compiled-bottom
+    :accessor uikit--compiled-bottom-of
+    :initform nil
+    :documentation "Byte compiled function that returns bottom of view.")
+   (compiled-width
+    :accessor uikit--compiled-width-of
+    :initform nil
+    :documentation "Byte compiled function that returns width of view.")
+   (compiled-height
+    :accessor uikit--compiled-height-of
+    :initform nil
+    :documentation "Byte compiled function that returns height of view.")
    (left-cache
     :accessor uikit--left-cache-of
     :initform nil
