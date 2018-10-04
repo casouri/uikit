@@ -164,7 +164,7 @@ CONTENT is a list of strings. Generally you want to make them have same length."
 ;;; Base Class
 ;;;; Abstract View
 
-(defclass uikit-abstract-view ()
+(defclass uikit-view ()
   (;; required in init
    (id
     :initarg :id
@@ -235,7 +235,7 @@ so make sure to include app name as prefix to avoid name clash.
     :initform nil
     :type (or null integer)
     :documentation "The `height' cache."))
-  "Parent of `uikit-view' and `uikit-stack'.
+  "Parent of `uikit-atom-view' and `uikit-stackview'.
 Both be a subview of one another."
   :abstract t)
 
@@ -245,7 +245,7 @@ Both be a subview of one another."
   "Return the view by ID."
   (intern (format "uikit--id-%s" id)))
 
-(cl-defmethod initialize-instance :after ((view uikit-abstract-view) &rest rest)
+(cl-defmethod initialize-instance :after ((view uikit-view) &rest rest)
   "Process the :id key. Create a variable `uikit--id-ID' as an alias of the view.
 e.g. uikit--id-mybutton for id \"mybutton\"."
   (setf (symbol-value (intern (format "uikit--id-%s" (uikit--id-of view))))
@@ -263,7 +263,7 @@ Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer.
 
 Normally you want to just use `left/right/...-of' accessors,
-this function is used by stack during auto layout
+this function is used by stackview during auto layout
 because they needs to change left/right/.../ base on their direction."
   (funcall (intern (format "%s-of" (symbol-name constrain))) view value))
 
@@ -387,7 +387,7 @@ If POS non-nil set instead of get."
 
 ;;;; View
 
-(defclass uikit-view (uikit-abstract-view)
+(defclass uikit-atom-view (uikit-view)
   ((face
     :accessor uikit--face-of
     :initarg :face
@@ -422,11 +422,11 @@ each element of the list is an cons of PROPERTY and VALUE that are eligibel for 
     :type (or null list))
 
    ;; drawing
-   (parent-stack
-    :accessor uikit--parent-stack-of
+   (parent-stackview
+    :accessor uikit--parent-stackview-of
     :initform nil
-    :documentation "The parent stack of this view.
-Used to check if the view is within the stack on screen.")
+    :documentation "The parent stackview of this view.
+Used to check if the view is within the stackview on screen.")
 
    ;; content
 
@@ -454,13 +454,13 @@ Typically this value is changed to t in`uikit-make-content' and to nil in `uikit
 his class is an abstract class."
   :abstract t)
 
-(cl-defmethod uikit-make-content ((view uikit-view))
- "Make content from data, returna a list of strings, each string is a line.
+(cl-defmethod uikit-make-content ((view uikit-atom-view))
+  "Make content from data, returna a list of strings, each string is a line.
 Each line must have same length and should not contain any return char."
- ;; abstract
- nil)
+  ;; abstract
+  nil)
 
-(cl-defmethod uikit-make-content :around ((view uikit-view))
+(cl-defmethod uikit-make-content :around ((view uikit-atom-view))
   "Make content if `content-changed' is t.
 This function returns the content just for usability.
 It's main job is to (potentially) update the content of VIEW.
@@ -475,10 +475,10 @@ So the specific `uikit-make-content' of each view class has to return their cont
     ;; content not changed, just return it
     (uikit--content-of view)))
 
-(cl-defmethod uikit-draw ((view uikit-view) &optional pos)
+(cl-defmethod uikit-draw ((view uikit-atom-view) &optional pos)
   "Draw the content on screen.
 
-It just add properties: face, keymap, uikit-view, others in property-list,
+It just add properties: face, keymap, uikit-atom-view, others in property-list,
 and then call `uikit-raw-draw'."
   ;; TOTEST
   (let ((content (uikit-make-content view))
@@ -495,9 +495,9 @@ and then call `uikit-raw-draw'."
       (add-text-properties 0 (length line) all-property line))
     (uikit-raw-draw content pos)))
 
-;;;; Stack
+;;;; Stackview
 
-(defclass uikit-stack (uikit-abstract-view)
+(defclass uikit-stackview (uikit-view)
   ((subview-list
     :accessor uikit--subview-list-of
     :initarg :subview-list
@@ -507,7 +507,7 @@ and then call `uikit-raw-draw'."
     :accessor uikit--autolayout-of
     :initarg :autolayout
     :initform nil
-    :documentation "Determins how does stack \"stack\" subviews together.
+    :documentation "Determins how does stackview \"stack\" subviews together.
 It can be nil, 'stacking, 'equal-spacing, 'portion."
     :type symbol)
    (equal-spacing-space
@@ -524,37 +524,37 @@ Only take effect when `autolayout' is non-nil.")
    (portion-list
     :accessor uikit--portion-list-of
     :initform nil
-    :documentation "A list of portions of subviews in stack in order when using 'portion autolayout.")
+    :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout.")
    (max-subview-height
     :accessor uikit--max-subview-height
-    :initform (byte-compile (lambda (stack) (cl-reduce
+    :initform (byte-compile (lambda (stackview) (cl-reduce
                                              '+
                                              (mapcar 'uikit--height-of
-                                                     (uikit--subview-list-of stack)))))
-    :documentation "The height of the tallest subview in stack.")
+                                                     (uikit--subview-list-of stackview)))))
+    :documentation "The height of the tallest subview in stackview.")
    (max-subview-height-cache
     :accessor uikit--max-subview-height-cache
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
-(cl-defmethod uikit-make-content ((stack uikit-stack))
-  "STACK make content by asking its subviews to make content."
+(cl-defmethod uikit-make-content ((stackview uikit-stackview))
+  "STACKVIEW make content by asking its subviews to make content."
   ;; TOTEST
-  (dolist (subview (uikit--subview-list-of stack))
+  (dolist (subview (uikit--subview-list-of stackview))
     (uikit-make-content subview)))
 
-(cl-defmethod uikit-quit ((stack uikit-stack))
-  "Quit stack and set all subviews to nil."
+(cl-defmethod uikit-quit ((stackview uikit-stackview))
+  "Quit stackview and set all subviews to nil."
   ;; TODO not finished
-  (dolist (subview (uikit--subview-list-of stack))
+  (dolist (subview (uikit--subview-list-of stackview))
     (uikit-quit subview))
-  (setf stack nil))
+  (setf stackview nil))
 
 
 ;;;; Scene
 
-(defclass uikit-scene (uikit-stack)
+(defclass uikit-scene (uikit-stackview)
   ((name
     :initarg :name
     :initform "*UIKit Abstract Scene*"
@@ -591,10 +591,10 @@ Only take effect when `autolayout' is non-nil.")
 
 ;;;;;; Auto Layout
 
-(defun uikit-autolayout (stack)
-  "Ask STACK to auto layout."
-  (if (uikit-width-of stack)
-      ;; if there is a stack, the stack is fixed size
+(defun uikit-autolayout (stackview)
+  "Ask STACKVIEW to auto layout."
+  (if (uikit-width-of stackview)
+      ;; if there is a stackview, the stackview is fixed size
       ;; therefore is not stacking but equal space
       ))
 
@@ -634,7 +634,7 @@ Creates a buffer and segue to the entry scene."
 
 ;;;; Label
 
-(defclass uikit-label (uikit-view)
+(defclass uikit-label (uikit-atom-view)
   ((text
     :initarg :text
     :accessor uikit--text-of
