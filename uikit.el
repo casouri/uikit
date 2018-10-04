@@ -297,7 +297,7 @@ make sure it returns a positive integer." (symbol-name constrain) (symbol-name c
                                               err))))
                            ((pred integerp) constrain)
                            ;; ??? How to match nil?
-                           (_ ,@form)))))
+                           (_ ,form)))))
            ;; not drawing, return the raw-constrain, let it be a number or form
            (,raw-xx-of view))))))
 
