@@ -18,6 +18,9 @@
 
 ;;; Variable
 
+(defvar uikit--drawing nil
+  "Set to t when drawing.")
+
 (defvar uikit-pad-char ?\s
   "The char used to pad views.")
 
@@ -264,96 +267,42 @@ because they needs to change left/right/.../ base on their direction."
 
 ;;;;; Special Accessor for View's Constrain
 
-(defun uikit-left-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `left' slot.
-If `left' slot is nil, calculate by `right' and `width'.
+(defmacro uikit--make-special-accessor (constrain form)
+  "Define special accessor for CONSTRAIN with FORM.
+FORM is calculation logic."
+  `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value)
+     ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
+If `%s' slot is nil, calculate it.
 Set the slot to VALUE when VALUE non-nil.
 VALUE can be a positive integer or a (quoted) form.
 
 Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-left-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (- (uikit--raw-right-of view) (uikit--raw-width-of view))
-            (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
-(defun uikit-right-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `right' slot.
-If `right' slot is nil, calculate by `left' and `width'.
-Set the slot to VALUE when VALUE non-nil.
-VALUE can be a positive integer or a (quoted) form.
+make sure it returns a positive integer." (symbol-name constrain) (symbol-name constrain))
+     (if value
+         (setf (,(intern (format "uikit--raw-%s-of" (symbol-name constrain))) view) value)
+       (let ((,(intern (format "raw-%s" (symbol-name constrain))) (if uikit--drawing
+                                                                      (,(intern (format "uikit--%s-cache-of" (symbol-name constrain))) view)
+                                                                    (,(intern (format "uikit--raw-%s-of" (symbol-name constrain))) view))))
+         (or ,(intern (format "raw-%s" (symbol-name constrain)))
+             (condition-case nil
+                 (setf ,(intern (format "uikit--raw-%s-of" (symbol-name constrain)))
+                       ,form)
+               (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view))))))))
 
-Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-right-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (+ (uikit--raw-left-of view) (uikit--raw-width-of view))
-            (error "Not enough constrain for %s. Cannot calculate right constrain of it" (id-of view)))))))
-(defun uikit-top-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `top' slot.
-If `top' slot is nil, calculate by `bottom' and `width'.
-Set the slot to VALUE when VALUE non-nil.
-VALUE can be a positive integer or a (quoted) form.
+(uikit--make-special-accessor left (- (uikit--raw-right-of view) (uikit--raw-width-of view)))
+(uikit--make-special-accessor right (+ (uikit--raw-left-of view) (uikit--raw-width-of view)))
+(uikit--make-special-accessor top (- (uikit--raw-bottom-of view) (uikit--raw-height-of view)))
+(uikit--make-special-accessor bottom (+ (uikit--raw-top-of view) (uikit--raw-height-of view)))
+(uikit--make-special-accessor width (- (uikit--raw-right-of view) (uikit--raw-left-of view)))
+(uikit--make-special-accessor height (- (uikit--raw-bottom-of view) (uikit--raw-top-of view)))
 
-Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-top-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (- (uikit--raw-bottom-of view) (uikit--raw-height-of view))
-            (error "Not enough constrain for %s. Cannot calculate top constrain of it" (id-of view)))))))
-(defun uikit-bottom-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `bottom' slot.
-If `bottom' slot is nil, calculate by `top' and `width'.
-Set the slot to VALUE when VALUE non-nil.
-VALUE can be a positive integer or a (quoted) form.
+(defun uikit-content-width-of (view)
+  "Return the content width of VIEW. Only look at first line of content."
+  (length (car (uikit--content-of view))))
 
-Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-bottom-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (+ (uikit--raw-top-of view) (uikit--raw-height-of view))
-            (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view)))))))
-(defun uikit-width-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `width' slot.
-If `width' slot is nil, calculate by `left' and `right'.
-Set the slot to VALUE when VALUE non-nil.
-VALUE can be a positive integer or a (quoted) form.
-
-Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-width-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (- (uikit--raw-right-of view) (uikit--raw-left-of view))
-            (error "Not enough constrain for %s. Cannot calculate width constrain of it" (id-of view)))))))
-(defun uikit-height-of (view &optional value)
-  "Takes any VIEW of `uikit-view' class and return its `height' slot.
-If `height' slot is nil, calculate by `left' and `bottom'.
-Set the slot to VALUE when VALUE non-nil.
-VALUE can be a positive integer or a (quoted) form.
-
-Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer."
-  (if value
-      (setf (uikit--raw-height-of view) value)
-    (let ((raw-left (uikit--raw-left-of view)))
-      (or raw-left
-          (condition-case nil
-              (- (uikit--raw-bottom-of view) (uikit--raw-top-of view))
-            (error "Not enough constrain for %s. Cannot calculate height constrain of it" (id-of view)))))))
+(defun uikit-content-height-of (view)
+  "Return the content height of VIEW."
+  (length (uikit--content-of view)))
 
 ;;;;; Other Functions
 
