@@ -14,7 +14,9 @@
 
 (ert-deftest uikit-gettter/setter ()
   "Test automatically generated getter/setter."
-  (let ((button (make-instance 'uikit-button :id "mybutton" :text "my button")))
+  (let ((button (make-instance 'uikit-button :id "mybutton" :text "my button"))
+        (stack (make-instance 'uikit-stackview :id "mystack"))
+        (uikit--drawing t))
     ;; normal setter & getter
     (uikit-left-of button 10)
     (uikit-right-of button 10)
@@ -43,7 +45,19 @@
 
     (uikit-top-of button 10)
     (uikit-bottom-of button 20)
-    (should (eq (uikit-height-of button) 10))))
+    (should (eq (uikit-height-of button) 10))
+
+    ;; set constrain to lambda
+    (uikit-left-of button (lambda (SELF) 10))
+    (should (eq (uikit-left-of button) 10))
+    (setf (uikit--left-cache-of button) nil)
+
+    ;; constrain based on parent
+    (setf (uikit--parent-stackview-of button) stack)
+    (uikit-left-of button (lambda (SELF) (uikit-left-of (uikit--parent-stackview-of SELF))))
+    (uikit-left-of stack 100)
+    (should (eq (uikit-left-of button) 100))
+    ))
 
 (ert-deftest uikit-constrain-test-obsolute ()
   "Test of constrains."

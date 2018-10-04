@@ -270,31 +270,43 @@ because they needs to change left/right/.../ base on their direction."
 (defmacro uikit--make-special-accessor (constrain form)
   "Define special accessor for CONSTRAIN with FORM.
 FORM is calculation logic."
-  `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value)
-     ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
+  (let ((raw-xx-of (intern (format "uikit--raw-%s-of" (symbol-name constrain))))
+        (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
+        (xx-cache-of (intern (format "uikit--%s-cache-of" (symbol-name constrain)))))
+    `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value)
+       ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
 If `%s' slot is nil, calculate it.
 Set the slot to VALUE when VALUE non-nil.
 VALUE can be a positive integer or a (quoted) form.
 
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer." (symbol-name constrain) (symbol-name constrain))
-     (if value
-         (setf (,(intern (format "uikit--raw-%s-of" (symbol-name constrain))) view) value)
-       (let ((,(intern (format "raw-%s" (symbol-name constrain))) (if uikit--drawing
-                                                                      (,(intern (format "uikit--%s-cache-of" (symbol-name constrain))) view)
-                                                                    (,(intern (format "uikit--raw-%s-of" (symbol-name constrain))) view))))
-         (or ,(intern (format "raw-%s" (symbol-name constrain)))
-             (condition-case nil
-                 (setf ,(intern (format "uikit--raw-%s-of" (symbol-name constrain)))
-                       ,form)
-               (error "Not enough constrain for %s. Cannot calculate left constrain of it" (id-of view))))))))
+       (if value
+           (setf (,raw-xx-of view) value)
+         (if uikit--drawing
+             ;; drawing: first look at cache, if nil calculate
+             (or (,xx-cache-of view)
+                 (setf (,xx-cache-of view)
+                       (let ((constrain (,raw-xx-of view)))
+                         (pcase constrain
+                           ((pred functionp)
+                            (condition-case err
+                                (funcall constrain view)
+                              (error (message "Error calculating constrain of %s: %s"
+                                              (uikit--id-of view)
+                                              err))))
+                           ((pred integerp) constrain)
+                           ;; ??? How to match nil?
+                           (_ ,@form)))))
+           ;; not drawing, return the raw-constrain, let it be a number or form
+           (,raw-xx-of view))))))
 
-(uikit--make-special-accessor left (- (uikit--raw-right-of view) (uikit--raw-width-of view)))
-(uikit--make-special-accessor right (+ (uikit--raw-left-of view) (uikit--raw-width-of view)))
-(uikit--make-special-accessor top (- (uikit--raw-bottom-of view) (uikit--raw-height-of view)))
-(uikit--make-special-accessor bottom (+ (uikit--raw-top-of view) (uikit--raw-height-of view)))
-(uikit--make-special-accessor width (- (uikit--raw-right-of view) (uikit--raw-left-of view)))
-(uikit--make-special-accessor height (- (uikit--raw-bottom-of view) (uikit--raw-top-of view)))
+(uikit--make-special-accessor left (- (uikit-right-of view) (uikit-width-of view)))
+(uikit--make-special-accessor right (+ (uikit-left-of view) (uikit-width-of view)))
+(uikit--make-special-accessor top (- (uikit-bottom-of view) (uikit-height-of view)))
+(uikit--make-special-accessor bottom (+ (uikit-top-of view) (uikit-height-of view)))
+(uikit--make-special-accessor width (- (uikit-right-of view) (uikit-left-of view)))
+(uikit--make-special-accessor height (- (uikit-bottom-of view) (uikit-top-of view)))
 
 (defun uikit-content-width-of (view)
   "Return the content width of VIEW. Only look at first line of content."
