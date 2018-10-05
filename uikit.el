@@ -466,11 +466,14 @@ and then call `uikit-raw-draw'."
         line-length
         (inhibit-modification-hooks t)
         (width (or (uikit-width-of view) (uikit-content-width-of view)))
-        (height (or (uikit-height-of view) (uikit-content-height-of view))))
-    (dolist (line content)
-      (add-text-properties 0 (length line) all-property line))
+        (height (or (uikit-height-of view) (uikit-content-height-of view)))
+        line)
+    (dolist (index (number-sequence 0 (1- (length content))))
+      (setf line (gv-ref (nth index content)))
+      (setf (gv-deref line) (substring (gv-deref line) 0 width))
+      (add-text-properties 0 width all-property (gv-deref line)))
     ;; we just set cache position, draw at there
-    (uikit-raw-draw content
+    (uikit-raw-draw (cl-subseq content 0 height)
                     (if pos (uikit-pos-x pos) (uikit-left-of view))
                     (if pos (uikit-pos-y pos) (uikit-top-of view)))))
 
