@@ -492,11 +492,16 @@ and then call `uikit-raw-draw'."
     :documentation "Determins how does stackview \"stack\" subviews together.
 It can be nil, 'stacking, 'equal-spacing, 'portion."
     :type symbol)
-   (equal-spacing-space
+   (stacking-space
     :accessor uikit--stacking-space-of
     :initform 0
     :type integer
-    :documentation "Spacing between subviews when using 'stacking auatolayout.")
+    :documentation "The space between subviews when using 'stacking autolayout.")
+   (equal-spacing-space-cache
+    :accessor uikit--equal-spacing-space-cache-of
+    :initform 0
+    :type integer
+    :documentation "Spacing between subviews when using 'equal-spacing auatolayout.")
    (v-align
     :accessor uikit--v-align-of
     :initform 'top
@@ -510,15 +515,27 @@ Only take effect when `autolayout' is non-nil.")
    (max-subview-height
     :accessor uikit--max-subview-height
     :initform (byte-compile (lambda (stackview) (cl-reduce
-                                             '+
-                                             (mapcar 'uikit--height-of
-                                                     (uikit--subview-list-of stackview)))))
+                                                 '+
+                                                 (mapcar 'uikit--height-of
+                                                         (uikit--subview-list-of stackview)))))
     :documentation "The height of the tallest subview in stackview.")
    (max-subview-height-cache
     :accessor uikit--max-subview-height-cache
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
+
+(defun uikit-equal-spacing-space-of (stackview)
+  "Return the space between subviews of STACKVIEW."
+  (or (uikit--equal-spacing-space-cache-of stackview)
+      (condition-case nil
+          (let ((subview-list (uikit--subview-list-of stackview)))
+            ;; (stackview width - sum of subviews' width ) / (subview number - 1)
+            (floor (/ (- (uikit-width-of stackview)
+                         (cl-reduce '+ (mapcar 'uikit--content-width-of subview-list)))
+                      (1- (length subview-list)))))
+        (error "Not enough constrain for %s. Cannot calculate equal-spacing-space constrain of it"
+               (id-of stackview)))))
 
 (cl-defmethod uikit-make-content ((stackview uikit-stackview))
   "STACKVIEW make content by asking its subviews to make content."
@@ -575,14 +592,30 @@ Only take effect when `autolayout' is non-nil.")
 
 (defun uikit-autolayout (stackview)
   "Ask STACKVIEW to auto layout."
-  (if (uikit-width-of stackview)
-      ;; if there is a stackview, the stackview is fixed size
-      ;; therefore is not stacking but equal space
-      ))
+  (let ((autolayout (uikit--autolayout-of stackview)))
+    (pcase autolayout
+      ;; during the drawing process `uikit-<constrain>-of' will be
+      ;; bind to another function that calculates the constrain into
+      ;; actual number and saves to cache
+      ((or 'stacking 'equal-spacing)
+       (let ((last-left (byte-compile (lambda (SELF) (uikit-left-of stackview))))
+             (space-func (pcase autolayout
+                           ('stacking (byte-compile (lambda () (uikit--stacking-space-of stackview))))
+                           ('equal-spacing (byte-compile (lambda () (uikit--equal-spacing-space stackview)))))))
+         (dolist (subview (uikit--subview-list-of stackview))
+           ;; set parent
+           (setf (uikit--parent-stackview-of subview) stackview)
+           ;; set left to right of previous view
+           (uikit-left-of subview last-left)
+           (setq last-left (byte-compile (lambda (SELF) (+ (uikit-right-of subview)
+                                                           (funcall space-func))))))))
+
+      ;; TODO
+      ('portion nil))))
 
 ;;;; App
 
-(defclass uikit-app (eieio-singleton eieio-persistent)
+(defclass uikit-app (eieio-persistent)
   ((name
     :initarg :name
     :initform "An App"
