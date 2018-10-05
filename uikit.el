@@ -140,24 +140,28 @@ WIDTH and HEIGHT are optional."
     (goto-char beg)
     (insert str)))
 
-(defun uikit-goto (pos)
-  "Go to `uikit-pos' POS."
+(defun uikit-goto (x y)
+  "Go to X Y."
   ;; TOTEST
-  (goto-char (uikit-pos-to-point pos)))
+  (goto-char (+ 2 x (* (1- y) (window-body-width)))))
 
 (defun uikit-pos-to-point (pos)
   "Convert `uikit-pos' POS to point (integer)."
   ;; TOTEST
   (+ 2 (uikit-pos-x pos) (* (1- (uikit-pos-y pos)) (window-body-width))))
 
-(defun uikit-raw-draw (content pos)
-  "Draw raw strings to canvas at POS.
+(defun uikit-goto-cache-point ()
+  "Goto `uikit--cache-x' `uikit--cache-y'."
+  (goto-char (+ 2 uikit--cache-x (* (1- uikit--cache-y) (window-body-width)))))
+
+(defun uikit-raw-draw (content x y)
+  "Draw raw strings to canvas at X and Y.
 CONTENT is a list of strings. Generally you want to make them have same length."
   ;; TOTEST hand tested
   (let ((window-width (window-body-width))
         point)
     (save-excursion
-      (uikit-goto pos)
+      (uikit-goto x y)
       (setq point (point))
       (dolist (line content)
         ;; ??? maybe cache a window width for current scene
@@ -273,14 +277,18 @@ FORM is calculation logic."
   (let ((raw-xx-of (intern (format "uikit--raw-%s-of" (symbol-name constrain))))
         (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
         (xx-cache-of (intern (format "uikit--%s-cache-of" (symbol-name constrain)))))
-    `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value)
+    `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value self-recure)
        ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
 If `%s' slot is nil, calculate it.
 Set the slot to VALUE when VALUE non-nil.
 VALUE can be a positive integer or a (quoted) form.
 
 Form will be evaluated to get a number during drawing of VIEW,
-make sure it returns a positive integer." (symbol-name constrain) (symbol-name constrain))
+make sure it returns a positive integer.
+
+SELF-RECURE is set to t when a view tries to calculate its constrain
+from it's own constrains, e.g. right = left + width.
+That might end up in infinite recursion." (symbol-name constrain) (symbol-name constrain))
        (if value
            (setf (,raw-xx-of view) value)
          (if uikit--drawing
@@ -289,24 +297,38 @@ make sure it returns a positive integer." (symbol-name constrain) (symbol-name c
                  (setf (,xx-cache-of view)
                        (let ((constrain (,raw-xx-of view)))
                          (pcase constrain
+                           ;; if there is a function in it, run that function,
+                           ;; the function might refer to constrains of other view, that's ok
                            ((pred functionp)
                             (condition-case err
                                 (funcall constrain view)
                               (error (message "Error calculating constrain of %s: %s"
                                               (uikit--id-of view)
                                               err))))
+                           ;; User hard coded this constrain, use it
                            ((pred integerp) constrain)
                            ;; ??? How to match nil?
-                           (_ ,form)))))
+                           ;; OK, we need the constrain but it's nil,
+                           ;; try to calculate it based on the other two
+                           ;; note the view to be drew only needs left, width, top & height
+                           ;; right and bottom is only needed when some other view's constrain
+                           ;; refers to this view's right/bottom
+                           ;; if self-recure is t and you ends up here,
+                           ;; too bad, there is not enough constrain, go cry in the bathroom
+                           ;; actually, if return nil, `uikit-draw' will set width to content width
+                           ;; so it's ok for width/height
+                           (_ (if self-recure
+                                  nil
+                                ,form))))))
            ;; not drawing, return the raw-constrain, let it be a number or form
            (,raw-xx-of view))))))
 
-(uikit--make-special-accessor left (- (uikit-right-of view) (uikit-width-of view)))
-(uikit--make-special-accessor right (+ (uikit-left-of view) (uikit-width-of view)))
-(uikit--make-special-accessor top (- (uikit-bottom-of view) (uikit-height-of view)))
-(uikit--make-special-accessor bottom (+ (uikit-top-of view) (uikit-height-of view)))
-(uikit--make-special-accessor width (- (uikit-right-of view) (uikit-left-of view)))
-(uikit--make-special-accessor height (- (uikit-bottom-of view) (uikit-top-of view)))
+(uikit--make-special-accessor left (ignore-errors (- (uikit-right-of view nil t) (uikit-width-of view nil t))))
+(uikit--make-special-accessor right (ignore-errors (+ (uikit-left-of view nil t) (uikit-width-of view nil t))))
+(uikit--make-special-accessor top (ignore-errors (- (uikit-bottom-of view nil t) (uikit-height-of view nil t))))
+(uikit--make-special-accessor bottom (ignore-errors (+ (uikit-top-of view nil t) (uikit-height-of view nil t))))
+(uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
+(uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
 
 (defun uikit-content-width-of (view)
   "Return the content width of VIEW. Only look at first line of content."
@@ -315,30 +337,6 @@ make sure it returns a positive integer." (symbol-name constrain) (symbol-name c
 (defun uikit-content-height-of (view)
   "Return the content height of VIEW."
   (length (uikit--content-of view)))
-
-;;;;; Other Functions
-
-(defun uikit-attribute-by-id (id attribute &optional value)
-  "Get or set ATTRIBUTE of view with id ID.
-If VALUE is non-nil, set; otherwise get."
-  (funcall (intern (format "%s.%s" (symbol-name id) (symbol-name attribute))) value))
-
-(defun get/set-pos-of (view &optional pos)
-  "Return the up left position of VIEW.
-Position is a `uikit-pos'.
-
-If POS non-nil set instead of get."
-  ;; TESTED
-  (if pos
-      (let ((x (uikit-pos-x pos))
-            (y (uikit-pos-x pos)))
-        (setf (uikit--raw-left-of view) x
-              (uikit--raw-top-of view) y)
-        ;; return pos
-        pos)
-    (let ((x (uikit-attribute-by-id (id-of view) 'left))
-          (y (uikit-attribute-by-id (id-of view) 'top)))
-      (make-uikit-pos :x x :y y))))
 
 ;;;; View
 
@@ -443,12 +441,14 @@ and then call `uikit-raw-draw'."
                               (uikit--property-list-of view)))
         line-length
         (inhibit-modification-hooks t)
-        (pos (if pos
-                 (get/set-pos-of view pos)
-               (get/set-pos-of view))))
+        (width (or (uikit-width-of view) (uikit-content-width-of view)))
+        (height (or (uikit-height-of view) (uikit-content-height-of view))))
     (dolist (line content)
       (add-text-properties 0 (length line) all-property line))
-    (uikit-raw-draw content pos)))
+    ;; we just set cache position, draw at there
+    (uikit-raw-draw content
+                    (if pos (uikit-pos-x pos) (uikit-left-of view))
+                    (if pos (uikit-pos-y pos) (uikit-top-of view)))))
 
 ;;;; Stackview
 
