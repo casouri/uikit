@@ -167,16 +167,12 @@ WIDTH and HEIGHT are optional."
 (defun uikit-goto (x y)
   "Go to X Y."
   ;; TOTEST
-  (goto-char (+ 2 x (* (1- y) (window-body-width)))))
+  (goto-char (+ 1 x (* y (window-body-width)))))
 
 (defun uikit-pos-to-point (pos)
   "Convert `uikit-pos' POS to point (integer)."
   ;; TOTEST
   (+ 2 (uikit-pos-x pos) (* (1- (uikit-pos-y pos)) (window-body-width))))
-
-(defun uikit-goto-cache-point ()
-  "Goto `uikit--cache-x' `uikit--cache-y'."
-  (goto-char (+ 2 uikit--cache-x (* (1- uikit--cache-y) (window-body-width)))))
 
 (defun uikit-raw-draw (content x y)
   "Draw raw strings to canvas at X and Y.
