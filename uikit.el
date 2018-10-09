@@ -463,22 +463,29 @@ So the specific `uikit-make-content' of each view class has to return their cont
     ;; content not changed, just return it
     (uikit--content-of view)))
 
+;; Update content has to be separated from drawing (more specifically, before that)
+;; because EVERY view has to have their content ready before
+;; ANY view starts to calculate its position.
+;; For example, a sbview in a equal spacing stackview calculates
+;; its left depends on the last view's right and the equal spacing;
+;; equal spacing is depended to ALL subview's width and stackview's length
+;; If any view doesn't have its content ready, equal spacing would return wrong number
 (cl-defmethod uikit-draw ((view uikit-atom-view) &optional pos)
   "Draw the content on screen.
 
 It just add properties: face, keymap, uikit-atom-view, others in property-list,
 and then call `uikit-raw-draw'."
   ;; TOTEST
-  (let ((content (uikit-make-content view))
+  (let ((content (uikit--content-of view))
         (all-property (append `(uikit-view ,view
                                            face ,(uikit--face-of view)
                                            keymap ,(uikit--keymap-of view))
                               (uikit--property-list-of view)))
-        line-length
         (inhibit-modification-hooks t)
-        (width (or (uikit-width-of view) (uikit-content-width-of view)))
-        (height (or (uikit-height-of view) (uikit-content-height-of view)))
-        line)
+        (width (or (uikit-width-of view) (uikit--content-width-of view)))
+        (height (or (uikit-height-of view) (uikit--content-height-of view)))
+        line
+        (uikit--drawing t))
     (dolist (index (number-sequence 0 (1- (length content))))
       (setf line (gv-ref (nth index content)))
       (setf (gv-deref line) (substring (gv-deref line) 0 width))
@@ -510,8 +517,8 @@ It can be nil, 'stacking, 'equal-spacing, 'portion."
     :documentation "The space between subviews when using 'stacking autolayout.")
    (equal-spacing-space-cache
     :accessor uikit--equal-spacing-space-cache-of
-    :initform 0
-    :type integer
+    :initform nil
+    :type (or null integer)
     :documentation "Spacing between subviews when using 'equal-spacing auatolayout.")
    (v-align
     :accessor uikit--v-align-of
@@ -519,6 +526,12 @@ It can be nil, 'stacking, 'equal-spacing, 'portion."
     :type symbol
     :documentation "Vertical alignment of subviews. Can be 'top, 'center, 'bottom.
 Only take effect when `autolayout' is non-nil.")
+   (orientation
+    :accessor uikit--orientation-of
+    :initform 'left
+    :type symbol
+    :documentation "The orientation of the stackview. 'left (default) means normal orientation.
+'top means rotate clockwise: top becomes left, left becomes bottom, etc.")
    (portion-list
     :accessor uikit--portion-list-of
     :initform nil
@@ -542,11 +555,14 @@ Only take effect when `autolayout' is non-nil.")
       (condition-case nil
           (let ((subview-list (uikit--subview-list-of stackview)))
             ;; (stackview width - sum of subviews' width ) / (subview number - 1)
-            (floor (/ (- (uikit-width-of stackview)
-                         (cl-reduce '+ (mapcar 'uikit--content-width-of subview-list)))
+            (floor (/ (let ((result (- (uikit-width-of stackview)
+                                       (cl-reduce '+ (mapcar 'uikit--content-width-of subview-list)))))
+                        (if (< result 0)
+                            0
+                          result))
                       (1- (length subview-list)))))
-        (error "Not enough constrain for %s. Cannot calculate equal-spacing-space constrain of it"
-               (id-of stackview)))))
+        ((debug error) (message "Not enough constrain for %s. Cannot calculate equal-spacing-space constrain of it"
+                                (uikit--id-of stackview))))))
 
 (cl-defmethod uikit-make-content ((stackview uikit-stackview))
   "STACKVIEW make content by asking its subviews to make content."
@@ -561,6 +577,69 @@ Only take effect when `autolayout' is non-nil.")
     (uikit-quit subview))
   (setf stackview nil))
 
+(cl-defmethod uikit-draw ((stack uikit-stackview))
+  "Draw the stackview."
+  (dolist (subview (uikit--subview-list-of stack))
+    (uikit-make-content subview))
+  ;; Update content has to be separated from drawing (more specifically, before that)
+  ;; because EVERY view has to have their content ready before
+  ;; ANY view starts to calculate its position.
+  ;; For example, a sbview in a equal spacing stackview calculates
+  ;; its left depends on the last view's right and the equal spacing;
+  ;; equal spacing is depended to ALL subview's width and stackview's length
+  ;; If any view doesn't have its content ready, equal spacing would return wrong number
+  (dolist (subview (uikit--subview-list-of stack))
+    (uikit-draw subview)))
+
+;;;;; Constrain
+
+;;;;;; Auto Layout
+
+(defun uikit-autolayout (stackview)
+  "Ask STACKVIEW to auto layout."
+  (let* ((orientation-index (pcase (uikit--orientation-of stackview)
+                              ('left 0) ; rotate clockwise 0 degree
+                              ('bottom 1) ; rotate 90 degree
+                              ('right 2) ; 180 degree
+                              ('top 3))) ; 270 degree
+         (left (lambda (SELF) (uikit-left-of stackview)))
+         (space-func (pcase (uikit--autolayout-of stackview)
+                       ('stacking (lambda () (uikit--stacking-space-of stackview)))
+                       ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))))
+         (top-func (pcase (uikit--v-align-of stackview)
+                     ('top (lambda (SELF) (uikit-top-of (uikit--parent-stackview-of SELF))))
+                     ('center (lambda (SELF)
+                                (+ (uikit-top-of (uikit--parent-stackview-of SELF))
+                                   (/ (- (uikit--max-subview-height (uikit--parent-stackview-of SELF))
+                                         (uikit-content-height-of SELF)) 2))))
+                     ('bottom (lambda (SELF)
+                                (- (uikit-bottom-of (uikit--parent-stackview-of SELF))
+                                   (uikit-content-width-of SELF)))))))
+    (let ((uikit-left-of (nth orientation-index '(uikit-left-of uikit-bottom-of uikit-right-of uikit-top-of)))
+          (uikit-bottom-of (nth orientation-index '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of)))
+          (uikit-right-of (nth orientation-index '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of)))
+          (uikit-top-of (nth orientation-index '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of))))
+      ;; during the drawing process `uikit-<constrain>-of' will be
+      ;; bind to another function that calculates the constrain into
+      ;; actual number and saves to cache
+      (dolist (subview (uikit--subview-list-of stackview))
+        ;; autolayout yourself if you are a stackview
+        (when (cl-typep subview 'uikit-stackview)
+          (uikit-autolayout subview))
+        ;; set your parent
+        (setf (uikit--parent-stackview-of subview) stackview)
+        ;; set your left to the left value pre-calculated by last subview for you
+        ;; just shut up and use it, no complain
+        (uikit-left-of subview left)
+        ;; calculate left position for next subview
+        (setq left (lambda (SELF)
+                     (let ((left (+ (uikit-right-of subview)
+                                    (funcall space-func))))
+                       (uikit-right-of subview)
+                       (funcall space-func)
+                       left)))
+        ;; top & bottom
+        (uikit-top-of subview top-func)))))
 
 ;;;; Scene
 
@@ -597,32 +676,6 @@ Only take effect when `autolayout' is non-nil.")
   "Configure constrain for each subview inside scene."
   ())
 
-;;;;; Constrain
-
-;;;;;; Auto Layout
-
-(defun uikit-autolayout (stackview)
-  "Ask STACKVIEW to auto layout."
-  (let ((autolayout (uikit--autolayout-of stackview)))
-    (pcase autolayout
-      ;; during the drawing process `uikit-<constrain>-of' will be
-      ;; bind to another function that calculates the constrain into
-      ;; actual number and saves to cache
-      ((or 'stacking 'equal-spacing)
-       (let ((last-left (byte-compile (lambda (SELF) (uikit-left-of stackview))))
-             (space-func (pcase autolayout
-                           ('stacking (byte-compile (lambda () (uikit--stacking-space-of stackview))))
-                           ('equal-spacing (byte-compile (lambda () (uikit--equal-spacing-space stackview)))))))
-         (dolist (subview (uikit--subview-list-of stackview))
-           ;; set parent
-           (setf (uikit--parent-stackview-of subview) stackview)
-           ;; set left to right of previous view
-           (uikit-left-of subview last-left)
-           (setq last-left (byte-compile (lambda (SELF) (+ (uikit-right-of subview)
-                                                           (funcall space-func))))))))
-
-      ;; TODO
-      ('portion nil))))
 
 ;;;; App
 

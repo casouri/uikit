@@ -59,6 +59,56 @@
     (should (eq (uikit-left-of button) 100))
     ))
 
+
+(defun uikit-test-prepare-canvas ()
+  "Prepare canvas for test."
+  (switch-to-buffer (get-buffer-create "TEST"))
+  (erase-buffer)
+  (uikit-prepare-canvas))
+
+(defun uikit-test-drawing-process ()
+  "Test drawing process."
+  (interactive)
+  (make-instance 'uikit-button :id "mybutton")
+  (uikit-left-of uikit//mybutton 20)
+  (uikit-top-of uikit//mybutton 10)
+  (let ((lexical-binding t))
+    (uikit-test-prepare-canvas)
+    (uikit-draw uikit//mybutton)))
+
+(defun uikit-test-autolayout-stacking ()
+  "Test autolayout."
+  (interactive)
+  (make-instance 'uikit-button :id "mybutton1")
+  (make-instance 'uikit-button :id "mybutton2")
+  (make-instance 'uikit-stackview :id "mystack")
+  (uikit-left-of uikit//mystack 20)
+  (uikit-top-of uikit//mystack 10)
+  (setf (uikit--subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2))
+  (setf (uikit--autolayout-of uikit//mystack) 'stacking)
+  (let ((lexical-binding t))
+    (uikit-test-prepare-canvas)
+    (uikit-autolayout uikit//mystack)
+    (uikit-draw uikit//mystack)))
+
+(defun uikit-test-autolayout-equal-spacing ()
+  "Test autolayout."
+  (interactive)
+  (make-instance 'uikit-button :id "mybutton1")
+  (make-instance 'uikit-button :id "mybutton2")
+  (make-instance 'uikit-button :id "mybutton3")
+  (make-instance 'uikit-stackview :id "mystack")
+  (uikit-left-of uikit//mystack 20)
+  (uikit-top-of uikit//mystack 10)
+  (uikit-right-of uikit//mystack 60)
+  (setf (uikit--subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2 uikit//mybutton3))
+  (setf (uikit--autolayout-of uikit//mystack) 'equal-spacing)
+  (let ((lexical-binding t))
+    (uikit-test-prepare-canvas)
+    (uikit-autolayout uikit//mystack)
+    (uikit-draw uikit//mystack)))
+
+
 (ert-deftest uikit-constrain-test-obsolute ()
   "Test of constrains."
   (let ((stack (make-instance 'uikit-stack))
