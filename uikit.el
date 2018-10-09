@@ -350,13 +350,26 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
 
-(defun uikit-content-width-of (view)
+(defun uikit--content-width-of (view)
   "Return the content width of VIEW. Only look at first line of content."
   (length (car (uikit--content-of view))))
 
-(defun uikit-content-height-of (view)
+(defun uikit--content-height-of (view)
   "Return the content height of VIEW."
   (length (uikit--content-of view)))
+
+(defun uikit-content-changed (view)
+  "Clear constrain cache & set `content-chenged' slot of VIEW."
+  (setf (uikit--left-cache-of view) nil)
+  (setf (uikit--right-cache-of view) nil)
+  (setf (uikit--top-cache-of view) nil)
+  (setf (uikit--bottom-cache-of view) nil)
+  (setf (uikit--width-cache-of view) nil)
+  (setf (uikit--height-cache-of view) nil)
+  (setf (uikit--left-cache-of view) nil)
+  (when (uikit-stackview-p view)
+    (setf (uikit--equal-spacing-space-cache-of view) nil))
+  (setf (uikit--content-changed-of view) t))
 
 ;;;; View
 
