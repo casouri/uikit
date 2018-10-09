@@ -295,7 +295,7 @@ because they needs to change left/right/.../ base on their direction."
   "Define special accessor for CONSTRAIN with FORM.
 FORM is calculation logic."
   (let ((raw-xx-of (intern (format "uikit--raw-%s-of" (symbol-name constrain))))
-        (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
+        ;; (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
         (xx-cache-of (intern (format "uikit--%s-cache-of" (symbol-name constrain)))))
     `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value self-recure)
        ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
@@ -328,6 +328,7 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
                            ;; User hard coded this constrain, use it
                            ((pred integerp) constrain)
                            ;; ??? How to match nil?
+                           ;;
                            ;; OK, we need the constrain but it's nil,
                            ;; try to calculate it based on the other two
                            ;; note the view to be drew only needs left, width, top & height
@@ -343,6 +344,7 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
            ;; not drawing, return the raw-constrain, let it be a number or form
            (,raw-xx-of view))))))
 
+;; simply return nil if operand(s) is(are) nil
 (uikit--make-special-accessor left (ignore-errors (- (uikit-right-of view nil t) (uikit-width-of view nil t))))
 (uikit--make-special-accessor right (ignore-errors (+ (uikit-left-of view nil t) (uikit-width-of view nil t))))
 (uikit--make-special-accessor top (ignore-errors (- (uikit-bottom-of view nil t) (uikit-height-of view nil t))))
@@ -440,7 +442,7 @@ Typically this value is changed to t in`uikit-make-content' and to nil in `uikit
 his class is an abstract class."
   :abstract t)
 
-(cl-defmethod uikit-make-content ((view uikit-atom-view))
+(cl-defmethod uikit-make-content ((_ uikit-atom-view))
   "Make content from data, returna a list of strings, each string is a line.
 Each line must have same length and should not contain any return char."
   ;; abstract
