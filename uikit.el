@@ -264,12 +264,12 @@ Both be a subview of one another."
 
 (defsubst uikit-by-id (id)
   "Return the view by ID."
-  (intern (format "uikit--id-%s" id)))
+  (intern (format "uikit//%s" id)))
 
-(cl-defmethod initialize-instance :after ((view uikit-view) &rest rest)
+(cl-defmethod initialize-instance :after ((view uikit-view) &rest _)
   "Process the :id key. Create a variable `uikit--id-ID' as an alias of the view.
 e.g. uikit--id-mybutton for id \"mybutton\"."
-  (setf (symbol-value (intern (format "uikit--id-%s" (uikit--id-of view))))
+  (setf (symbol-value (intern (format "uikit//%s" (uikit--id-of view))))
         view))
 
 ;;;;; Universal Accessor: Getter & Setter
