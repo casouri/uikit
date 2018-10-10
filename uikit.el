@@ -160,7 +160,7 @@ WIDTH and HEIGHT are optional."
   "Replace strings between BEG and (+ BEG (length STR)) with STR."
   ;; TOTEST hand tested
   (save-excursion
-    (delete-region (1+ beg) (+ 1 beg (length str)))
+    (delete-region beg (+ beg (length str)))
     (goto-char beg)
     (insert str)))
 
@@ -470,7 +470,7 @@ So the specific `uikit-make-content' of each view class has to return their cont
 ;; its left depends on the last view's right and the equal spacing;
 ;; equal spacing is depended to ALL subview's width and stackview's length
 ;; If any view doesn't have its content ready, equal spacing would return wrong number
-(cl-defmethod uikit-draw ((view uikit-atom-view) &optional pos)
+(cl-defmethod uikit-draw ((view uikit-atom-view) &optional x y)
   "Draw the content on screen.
 
 It just add properties: face, keymap, uikit-atom-view, others in property-list,
@@ -485,15 +485,17 @@ and then call `uikit-raw-draw'."
         (width (or (uikit-width-of view) (uikit--content-width-of view)))
         (height (or (uikit-height-of view) (uikit--content-height-of view)))
         line
-        (uikit--drawing t))
+        (uikit--drawing t)
+        (inhibit-modification-hooks t)
+        (undo-inhibit-record-point t))
     (dolist (index (number-sequence 0 (1- (length content))))
       (setf line (gv-ref (nth index content)))
       (setf (gv-deref line) (substring (gv-deref line) 0 width))
       (add-text-properties 0 width all-property (gv-deref line)))
     ;; we just set cache position, draw at there
     (uikit-raw-draw (cl-subseq content 0 height)
-                    (if pos (uikit-pos-x pos) (uikit-left-of view))
-                    (if pos (uikit-pos-y pos) (uikit-top-of view)))))
+                    (or x (uikit-left-of view))
+                    (or y (uikit-top-of view)))))
 
 ;;;; Stackview
 
