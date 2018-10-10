@@ -14,7 +14,7 @@ There are only label and button available, because I want to make auto layout wo
 #+BEGIN_SRC emacs-lisp
 ;; M-x eval-buffer or load uikit.el
 ;; create a button
-(make-instance 'uikit-button :text "MYBUTTON")
+(make-instance 'uikit-button :id "mybutton" :text "MYBUTTON")
 ;; make a new buffer and prepare canvas
 (switch-to-buffer (get-buffer-create "TEST"))
 (uikit-prepare-canvas)
