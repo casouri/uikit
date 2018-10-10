@@ -14,14 +14,12 @@ There are only label and button available, because I want to make auto layout wo
 #+BEGIN_SRC emacs-lisp
 ;; M-x eval-buffer or load uikit.el
 ;; create a button
-(make-instance 'uikit-button :id "myapp-mybutton" :text "MYBUTTON")
-;; create a position
-(setq mypos (make-uikit-pos :x 20 :y 10))
+(make-instance 'uikit-button :text "MYBUTTON")
 ;; make a new buffer and prepare canvas
 (switch-to-buffer (get-buffer-create "TEST"))
 (uikit-prepare-canvas)
-;; draw the button
-(uikit-draw uikit--id-myapp-mybutton mypos)
+;; draw the button and position X: 20 & y: 10
+(uikit-draw uikit--id-myapp-mybutton 20 10)
 ;; you should be able to see a button
 #+END_SRC
 
@@ -33,10 +31,7 @@ Features:
 
 - Text based :: Everything is text. No images *at all*. Not even overlay image.
 
-- Two dimentional coordinate :: In UIKit, positions are like (x, y)
-     instead of normal linear position like 245.
-                                
-- UIKit handles layout automatically :: Actually, you never need to worry about positions,
+- Auto layout :: You never need to worry about positions,
      UIKit does all the layout arranging and content drawing.
      All you do is configure the layout and update widget
      content.
