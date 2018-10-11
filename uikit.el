@@ -65,7 +65,7 @@
 ;;; Base Structs
 
 (cl-defstruct uikit-pos
-  "Represents a position in cavas.
+  "Represents a position in canvas.
 both x and y are zero based.
 Note that the length of the unit in y direction is about two times as
 the unit in x direction.
@@ -189,7 +189,8 @@ CONTENT is a list of strings. Generally you want to make them have same length."
         (setq point (+ point window-width))))))
 
 ;;; Base Class
-;;;; Abstract View
+
+;;;; View
 
 (defclass uikit-view ()
   (;; required in init
