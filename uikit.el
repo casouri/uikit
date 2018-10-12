@@ -79,7 +79,7 @@ For example (20, 10) nearly forms a square."
         (uikit-pos-y pos) (+ (uikit-pos-y pos) (uikit-pos-y offset)))
   pos)
 
-                                        ; TODO DOC
+;; TODO DOC
 ;; (cl-defstruct uikit-layout
 ;;  "Specifies how does a stack arrange
 ;; space for its subviews.
