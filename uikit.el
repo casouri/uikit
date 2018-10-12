@@ -256,9 +256,14 @@ so make sure to include app name as prefix to avoid name clash.
     :accessor uikit--height-cache-of
     :initform nil
     :type (or null integer)
-    :documentation "The `height' cache."))
-  "Parent of `uikit-atom-view' and `uikit-stackview'.
-Both be a subview of one another."
+    :documentation "The `height' cache.")
+   ;; drawing
+   (parent-stackview
+    :accessor uikit--parent-stackview-of
+    :initform nil
+    :documentation "The parent stackview of this view.
+Used to check if the view is within the stackview on screen."))
+  "Parent of `uikit-atom-view' and `uikit-stackview'."
   :abstract t)
 
 ;;;;; Process :id
@@ -323,7 +328,7 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
                            ((pred functionp)
                             (condition-case err
                                 (funcall constrain view)
-                              (error (message "Error calculating constrain of %s: %s"
+                              (error (message "Error calculating constrain of %s, error is: %s"
                                               (uikit--id-of view)
                                               err))))
                            ;; User hard coded this constrain, use it
@@ -409,13 +414,6 @@ TODO Does keymap in property list override this?
 overwrites face and keymap slot.
 each element of the list is an cons of PROPERTY and VALUE that are eligibel for `put-text-property'."
     :type (or null list))
-
-   ;; drawing
-   (parent-stackview
-    :accessor uikit--parent-stackview-of
-    :initform nil
-    :documentation "The parent stackview of this view.
-Used to check if the view is within the stackview on screen.")
 
    ;; content
 
