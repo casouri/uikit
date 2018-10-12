@@ -592,6 +592,20 @@ Only take effect when `autolayout' is non-nil.")
   (dolist (subview (uikit--subview-list-of stack))
     (uikit-draw subview)))
 
+;;;;; Helpers
+
+(defun uikit-subview-append (stackview &rest view-list)
+  "Append views in VIEW-LIST to STACKVIEW's `subview-list'."
+  (setf (uikit--subview-list-of stackview )
+        (append (uikit--subview-list-of stackview)
+                view-list)))
+
+(defun uikit-subview-push (stackview &rest view-list)
+  "Push views in VIEW-LIST to STACKVIEW's `subview-list'."
+  (setf (uikit--subview-list-of stackview )
+        (append (reverse view-list)
+                (uikit--subview-list-of stackview))))
+
 ;;;;; Constrain
 
 ;;;;;; Auto Layout
