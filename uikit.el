@@ -188,6 +188,21 @@ CONTENT is a list of strings. Generally you want to make them have same length."
         (uikit-replace-with line point)
         (setq point (+ point window-width))))))
 
+;;;; Helpers
+
+(defun uikit--error-nil (var msg &rest args)
+  "Raise an error if VAR is nil, show MSG. ARGS are supplied to  `error'."
+  (if var
+      var
+    (apply #'error msg args)))
+
+(defmacro uikit--ensure>=0 (body)
+  "Evaluate BODY, if result < 0, return 0, else return the result."
+  `(let ((result ,body))
+     (if (< result 0)
+         0
+       result)))
+
 ;;; Base Class
 
 ;;;; View
