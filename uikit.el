@@ -373,14 +373,6 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
 
-(defun uikit--content-width-of (view)
-  "Return the content width of VIEW. Only look at first line of content."
-  (length (car (uikit--content-of view))))
-
-(defun uikit--content-height-of (view)
-  "Return the content height of VIEW."
-  (length (uikit--content-of view)))
-
 (defun uikit-content-changed (view)
   "Clear constrain cache & set `content-chenged' slot of VIEW."
   (setf (uikit--left-cache-of view) nil)
@@ -394,7 +386,7 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
     (setf (uikit--equal-spacing-space-cache-of view) nil))
   (setf (uikit--content-changed-of view) t))
 
-;;;; View
+;;;; Atom View
 
 (defclass uikit-atom-view (uikit-view)
   ((face
@@ -607,6 +599,16 @@ Only take effect when `autolayout' is non-nil.")
   (dolist (subview (uikit--subview-list-of stack))
     (uikit-draw subview)))
 
+
+(cl-defmethod uikit--content-width-of ((stack uikit-stackview))
+  "Return the content width of STACK. Return the sum of all subviews' length of STACK."
+  (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack))))
+
+(cl-defmethod uikit--content-height-of ((stack uikit-stackview))
+  "Return the content height of STACK."
+  (uikit--max-subview-height-of stack))
+
+
 ;;;;; Helpers
 
 (defun uikit-subview-append (stackview &rest view-list)
@@ -636,6 +638,12 @@ Only take effect when `autolayout' is non-nil.")
          (uikit-bottom-of (nth orientation-index '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of)))
          (uikit-right-of (nth orientation-index '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of)))
          (uikit-top-of (nth orientation-index '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of)))
+         (uikit--content-width-of (nth orientation-index '(uikit--content-width-of uikit--content-height-of
+                                                                                   uikit--content-width-of
+                                                                                   uikit--content-height-of)))
+         (uikit--content-height-of (nth orientation-index '(uikit--content-height-of uikit--content-width-of
+                                                                                     uikit--content-height-of
+                                                                                     uikit--content-width-of)))
          (uikit--drawing nil) ; this should default to nil, but just to make sure
          (left (lambda (view) (uikit-left-of stackview)))
          (space-func (pcase (uikit--autolayout-of stackview) ; function that returns the space length between subviews
