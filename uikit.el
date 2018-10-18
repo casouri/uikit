@@ -628,48 +628,51 @@ Only take effect when `autolayout' is non-nil.")
 (defun uikit-autolayout (stackview)
   "Ask STACKVIEW to auto layout."
   (let* ((orientation-index (pcase (uikit--orientation-of stackview)
-                              ('left 0) ; rotate clockwise 0 degree
+                              ('left 0) ; rotate counterclockwise 0 degree
                               ('bottom 1) ; rotate 90 degree
                               ('right 2) ; 180 degree
                               ('top 3))) ; 270 degree
-         (left (lambda (SELF) (uikit-left-of stackview)))
-         (space-func (pcase (uikit--autolayout-of stackview)
+         (uikit-left-of (nth orientation-index '(uikit-left-of uikit-bottom-of uikit-right-of uikit-top-of)))
+         (uikit-bottom-of (nth orientation-index '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of)))
+         (uikit-right-of (nth orientation-index '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of)))
+         (uikit-top-of (nth orientation-index '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of)))
+         (uikit--drawing nil) ; this should default to nil, but just to make sure
+         (left (lambda (view) (uikit-left-of stackview)))
+         (space-func (pcase (uikit--autolayout-of stackview) ; function that returns the space length between subviews
                        ('stacking (lambda () (uikit--stacking-space-of stackview)))
-                       ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))))
-         (top-func (pcase (uikit--v-align-of stackview)
-                     ('top (lambda (SELF) (uikit-top-of (uikit--parent-stackview-of SELF))))
-                     ('center (lambda (SELF)
-                                (+ (uikit-top-of (uikit--parent-stackview-of SELF))
-                                   (/ (- (uikit--max-subview-height (uikit--parent-stackview-of SELF))
-                                         (uikit-content-height-of SELF)) 2))))
-                     ('bottom (lambda (SELF)
-                                (- (uikit-bottom-of (uikit--parent-stackview-of SELF))
-                                   (uikit-content-width-of SELF)))))))
-    (let ((uikit-left-of (nth orientation-index '(uikit-left-of uikit-bottom-of uikit-right-of uikit-top-of)))
-          (uikit-bottom-of (nth orientation-index '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of)))
-          (uikit-right-of (nth orientation-index '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of)))
-          (uikit-top-of (nth orientation-index '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of))))
-      ;; during the drawing process `uikit-<constrain>-of' will be
-      ;; bind to another function that calculates the constrain into
-      ;; actual number and saves to cache
-      (dolist (subview (uikit--subview-list-of stackview))
-        ;; autolayout yourself if you are a stackview
-        (when (cl-typep subview 'uikit-stackview)
-          (uikit-autolayout subview))
-        ;; set your parent
-        (setf (uikit--parent-stackview-of subview) stackview)
-        ;; set your left to the left value pre-calculated by last subview for you
-        ;; just shut up and use it, no complain
-        (uikit-left-of subview left)
-        ;; calculate left position for next subview
-        (setq left (lambda (SELF)
-                     (let ((left (+ (uikit-right-of subview)
-                                    (funcall space-func))))
-                       (uikit-right-of subview)
-                       (funcall space-func)
-                       left)))
-        ;; top & bottom
-        (uikit-top-of subview top-func)))))
+                       ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))
+                       (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit--id-of stackview)))))
+         (top-func (pcase (uikit--v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
+                     ('top (lambda (view) (uikit-top-of (uikit--parent-stackview-of view))))
+                     ('center (lambda (view)
+                                (+ (uikit-top-of (uikit--parent-stackview-of view))
+                                   (/ (- (uikit--max-subview-height (uikit--parent-stackview-of view))
+                                         (uikit--content-height-of view)) 2))))
+                     ('bottom (lambda (view)
+                                (- (uikit-bottom-of (uikit--parent-stackview-of view))
+                                   (uikit--content-width-of view)))))))
+    (dolist (subview (uikit--subview-list-of stackview))
+      ;; autolayout yourself if you are a stackview
+      (when (cl-typep subview 'uikit-stackview)
+        (uikit-autolayout subview))
+      ;; set your parent
+      (setf (uikit--parent-stackview-of subview) stackview)
+      ;; set your left to the left value pre-calculated by last subview for you
+      ;; just shut up and use it, no complain
+      (uikit-left-of subview left)
+      ;; calculate left position for next subview
+      (setq left (lambda (view)
+                   (let ((right (uikit--error-nil
+                                 (uikit-right-of subview)
+                                 "last subview's right is nil when calculating left for %s"
+                                 (uikit--id-of view)))
+                         (space (uikit--error-nil
+                                 (funcall space-func)
+                                 "space from stackview top is nil when calculating left for %s"
+                                 (uikit--id-of view))))
+                     (+ right space))))
+      ;; top & bottom
+      (uikit-top-of subview top-func))))
 
 ;;;; Scene
 
