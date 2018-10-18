@@ -91,6 +91,34 @@
     (uikit-autolayout uikit//mystack)
     (uikit-draw uikit//mystack)))
 
+(defun uikit-test-autolayout-bulk ()
+  "Test autolayout."
+  (interactive)
+  (make-instance 'uikit-stackview :id "mystack")
+  (setf (uikit--autolayout-of uikit//mystack) 'stacking
+        (uikit--orientation-of uikit//mystack) 'top)
+
+  (dolist (num0 (number-sequence 0 9))
+    (print num0)
+    (uikit-subview-append
+     uikit//mystack
+     (make-instance 'uikit-stackview :id (format "mystack%d" num0)))
+    (setf (uikit--autolayout-of (symbol-value (intern (format "uikit//mystack%d" num0))))
+          'stacking)
+    (dolist (num1 (number-sequence 0 9))
+      (uikit-subview-append
+       (symbol-value (intern (format "uikit//mystack%d" num0)))
+       (make-instance 'uikit-button :id (format "mybutton%d%s" num0 num1)))))
+
+  (uikit-left-of uikit//mystack 20)
+  (uikit-top-of uikit//mystack 10)
+  ;; (uikit-right-of uikit//mystack 60)
+  ;; (setf (uikit--autolayout-of uikit//mystack) 'equal-spacing)
+  (let ((lexical-binding t))
+    (uikit-test-prepare-canvas)
+    (uikit-autolayout uikit//mystack)
+    (uikit-draw uikit//mystack)))
+
 (defun uikit-test-autolayout-equal-spacing ()
   "Test autolayout."
   (interactive)
