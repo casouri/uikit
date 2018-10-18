@@ -500,8 +500,18 @@ and then call `uikit-raw-draw'."
       (add-text-properties 0 width all-property (gv-deref line)))
     ;; we just set cache position, draw at there
     (uikit-raw-draw (cl-subseq content 0 height)
-                    (or x (uikit-left-of view))
-                    (or y (uikit-top-of view)))))
+                    (or x (uikit--error-nil (uikit-left-of view) "Warning: %s's left is nil" (uikit--id-of view)))
+                    (or y (uikit--error-nil (uikit-top-of view) "Warning: %s's top is nil" (uikit--id-of view))))))
+
+
+(cl-defmethod uikit--content-width-of ((view uikit-atom-view))
+  "Return the content width of VIEW. Only look at first line of content."
+  (length (car (uikit--content-of view))))
+
+(cl-defmethod uikit--content-height-of ((view uikit-atom-view))
+  "Return the content height of VIEW."
+  (length (uikit--content-of view)))
+
 
 ;;;; Stackview
 
