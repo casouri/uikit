@@ -96,7 +96,8 @@
   (interactive)
   (make-instance 'uikit-stackview :id "mystack")
   (setf (uikit--autolayout-of uikit//mystack) 'stacking
-        (uikit--orientation-of uikit//mystack) 'top)
+        (uikit--orientation-of uikit//mystack) 'top
+        (uikit--v-align-of uikit//mystack) 'bottom)
 
   (dolist (num0 (number-sequence 0 9))
     (print num0)
