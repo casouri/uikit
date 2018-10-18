@@ -344,8 +344,8 @@ That might end up in infinite recursion." (symbol-name constrain) (symbol-name c
                             (condition-case err
                                 (funcall constrain view)
                               ((debug error) (message "Error calculating constrain of %s (by calling lambda function), error is: %s"
-                                              (uikit--id-of view)
-                                              err))))
+                                                      (uikit--id-of view)
+                                                      err))))
                            ;; User hard coded this constrain, use it
                            ((pred integerp) constrain)
                            ;; ??? How to match nil?
