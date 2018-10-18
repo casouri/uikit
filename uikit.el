@@ -440,7 +440,7 @@ It is a list for the same reason as `content'.")
     :accessor uikit--content-changed-of
     :initform t
     :documentation "If this is t, then content needs to be recalculated.
-Everythime a change that alters the visual appearance of the view is made,
+Every time a change that alters the visual appearance of the view is made,
 this should be set to t. But don't change this value directly, use `uikit-changed'.
 Typically this value is changed to t in`uikit-make-content' and to nil in `uikit-draw'."
     :type boolean))
