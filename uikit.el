@@ -545,14 +545,14 @@ Only take effect when `autolayout' is non-nil.")
     :initform nil
     :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout.")
    (max-subview-height
-    :accessor uikit--max-subview-height
+    :accessor uikit--max-subview-height-of
     :initform (byte-compile (lambda (stackview) (cl-reduce
                                                  '+
                                                  (mapcar 'uikit--height-of
                                                          (uikit--subview-list-of stackview)))))
     :documentation "The height of the tallest subview in stackview.")
    (max-subview-height-cache
-    :accessor uikit--max-subview-height-cache
+    :accessor uikit--max-subview-height-cache-of
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
