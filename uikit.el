@@ -196,12 +196,11 @@ CONTENT is a list of strings. Generally you want to make them have same length."
       var
     (apply #'error msg args)))
 
-(defmacro uikit--ensure>=0 (body)
-  "Evaluate BODY, if result < 0, return 0, else return the result."
-  `(let ((result ,body))
-     (if (< result 0)
-         0
-       result)))
+(defun uikit--ensure>=0 (var)
+  "If VAR < 0, return 0, else return VAR."
+  (if (< var 0)
+      0
+    var))
 
 ;;; Base Class
 
