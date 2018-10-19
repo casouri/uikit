@@ -72,9 +72,9 @@
   (make-instance 'uikit-button :id "mybutton")
   (uikit-left-of uikit//mybutton 20)
   (uikit-top-of uikit//mybutton 10)
-  (let ((lexical-binding t))
-    (uikit-test-prepare-canvas)
-    (uikit-draw uikit//mybutton)))
+  (uikit-test-prepare-canvas)
+  (uikit-make-content uikit//mybutton)
+  (uikit-draw uikit//mybutton))
 
 (defun uikit-test-autolayout-stacking ()
   "Test autolayout."
