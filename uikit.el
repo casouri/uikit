@@ -481,6 +481,12 @@ So the specific `uikit-make-content' of each view class has to return their cont
 It just add properties: face, keymap, uikit-atom-view, others in property-list,
 and then call `uikit-raw-draw'."
   ;; TOTEST
+  ;; normally parent stackview handles this,
+  ;; but if the view doesn't have a parent stackview
+  ;; it got to do it itself
+  (when (or (not (uikit--content-of view))
+            (uikit--content-changed-of view))
+    (uikit-make-content view))
   (let ((content (uikit--content-of view))
         (all-property (append `(uikit-view ,view
                                            face ,(uikit--face-of view)
