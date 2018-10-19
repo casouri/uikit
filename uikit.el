@@ -511,10 +511,12 @@ and then call `uikit-raw-draw'."
 
 (cl-defmethod uikit--content-width-of ((view uikit-atom-view))
   "Return the content width of VIEW. Only look at first line of content."
+  ;; TOTEST
   (length (car (uikit--content-of view))))
 
 (cl-defmethod uikit--content-height-of ((view uikit-atom-view))
   "Return the content height of VIEW."
+  ;; TOTEST
   (length (uikit--content-of view)))
 
 
