@@ -59,6 +59,14 @@
     (should (eq (uikit-left-of button) 100))
     ))
 
+(ert-deftest uikit-content-width-for-stackview ()
+  "Test if `uikit--content-width-of' function works well."
+  (make-instance 'uikit-button :id "mybutton0")
+  (make-instance 'uikit-button :id "mybutton1")
+  (make-instance 'uikit-stackview :id "mystack")
+  (uikit-subview-append uikit//mystack uikit//mybutton0 uikit//mybutton1)
+  (uikit-make-content uikit//mystack)
+  (should (eq (uikit--content-width-of uikit//mystack) 12)))
 
 (defun uikit-test-prepare-canvas ()
   "Prepare canvas for test."
@@ -89,6 +97,22 @@
     (uikit-test-prepare-canvas)
     (uikit-autolayout uikit//mystack)
     (uikit-draw uikit//mystack)))
+
+(defun uikit-test-autolayout-top-orientation ()
+  "Test top orientation."
+  (interactive)
+  (make-instance 'uikit-stackview :id "mystack")
+  (make-instance 'uikit-button :id "mybutton0" :text "BUTTON0")
+  (make-instance 'uikit-button :id "mybutton1" :text "BUTTON1")
+  (setf (uikit--orientation-of uikit//mystack) 'top
+        (uikit--autolayout-of uikit//mystack) 'stacking)
+  (uikit-left-of uikit//mystack 20)
+  (uikit-top-of uikit//mystack 10)
+  (uikit-subview-append uikit//mystack uikit//mybutton0 uikit//mybutton1)
+  (uikit-autolayout uikit//mystack)
+
+  (uikit-test-prepare-canvas)
+  (uikit-draw uikit//mystack))
 
 (defun uikit-test-autolayout-bulk ()
   "Test autolayout."

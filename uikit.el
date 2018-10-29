@@ -205,7 +205,7 @@ CONTENT is a list of strings. Generally you want to make them have same length."
 ;;; Base Class
 
 ;;;; View
-
+;;;;; View
 (defclass uikit-view ()
   (;; required in init
    (id
@@ -311,14 +311,34 @@ because they needs to change left/right/.../ base on their direction."
 
 ;;;;; Special Accessor for View's Constrain
 
+;; SCRATCH
+;; (setq cc (lambda (seq) (funcall 'cc seq)))
+;;
+;; (funcall (let ((cc (lambda (seq) (nth 1 seq))))
+;;            cc)
+;;          '(1 2 3))
+;;
+;; (defmacro bb (sym val)
+;;   `(defmacro ,sym (a b c)
+;;      (list 'list ,val a b c)))
+;;
+;; (bb cc)
+;; (cc 1 2 3)
+;; END_SCRATCH
+
 (defmacro uikit--make-special-accessor (constrain form)
   "Define special accessor for CONSTRAIN with FORM.
-FORM is calculation logic."
+FORM is calculation logic. E.g, left = right - width"
   (let ((raw-xx-of (intern (format "uikit--raw-%s-of" (symbol-name constrain))))
         ;; (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
         (xx-cache-of (intern (format "uikit--%s-cache-of" (symbol-name constrain)))))
-    `(defun ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value self-recure)
-       ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
+    `(progn
+       ;; define a function that `funcall' on the symbol as same as the function itself
+       ;; with arguments received
+       ;; then we can play with the variable of the same symbol as function
+       ;; in closure
+       (defmacro ,(intern (format "uikit-%s-of" (symbol-name constrain))) (view &optional value self-recure)
+         ,(format "Takes any VIEW of `uikit-view' class and return its `%s' slot.
 If `%s' slot is nil, calculate it.
 Set the slot to VALUE when VALUE non-nil.
 VALUE can be a positive integer or a (quoted) form.
@@ -328,65 +348,65 @@ make sure it returns a positive integer.
 
 SELF-RECURE is set to t when a view tries to calculate its constrain
 from it's own constrains, e.g. right = left + width.
-That might end up in infinite recursion." (symbol-name constrain) (symbol-name constrain))
-       (if value
-           (setf (,raw-xx-of view) value)
-         (if uikit--drawing
-             ;; drawing: first look at cache, if nil calculate
-             (or (,xx-cache-of view)
-                 (setf (,xx-cache-of view)
-                       (let ((constrain (,raw-xx-of view)))
-                         (pcase constrain
-                           ;; if there is a function in it, run that function,
-                           ;; the function might refer to constrains of other view, that's ok
-                           ((pred functionp)
-                            (condition-case err
-                                (funcall constrain view)
-                              ((debug error) (message "Error calculating constrain of %s (by calling lambda function), error is: %s"
-                                                      (uikit--id-of view)
-                                                      err))))
-                           ;; User hard coded this constrain, use it
-                           ((pred integerp) constrain)
-                           ;; ??? How to match nil?
-                           ;;
-                           ;; OK, we need the constrain but it's nil,
-                           ;; try to calculate it based on the other two
-                           ;; note the view to be drew only needs left, width, top & height
-                           ;; right and bottom is only needed when some other view's constrain
-                           ;; refers to this view's right/bottom
-                           ;; if self-recure is t and you ends up here,
-                           ;; too bad, there is not enough constrain, go cry in the bathroom
-                           ;; actually, if return nil, `uikit-draw' will set width to content width
-                           ;; so it's ok for width/height
-                           (_ (if self-recure
-                                  nil
-                                ,form))))))
-           ;; not drawing, return the raw-constrain, let it be a number or form
-           (,raw-xx-of view))))))
+That might end up in infinite recursion."
+                  (symbol-name constrain) (symbol-name constrain))
+         (list 'funcall ',(intern (format "uikit-%s-of" (symbol-name constrain)))
+               view value self-recure))
+       (setq ,(intern (format "uikit-%s-of" (symbol-name constrain)))
+             (lambda (view &optional value self-recure)
+               (if value ;; set value if given
+                   (setf (,raw-xx-of view) value)
+                 ;; get value
+                 (if uikit--drawing
+                     ;; drawing: first look at cache, if nil calculate
+                     (or (,xx-cache-of view)
+                         (setf (,xx-cache-of view)
+                               (let ((constrain (,raw-xx-of view)))
+                                 (pcase constrain
+                                   ;; if there is a function in it, run that function,
+                                   ;; the function might refer to constrains of other view, that's ok
+                                   ((pred functionp)
+                                    (condition-case err
+                                        (funcall constrain view)
+                                      ((debug error) (message "Error calculating constrain of %s (by calling lambda function), error is: %s"
+                                                              (uikit--id-of view)
+                                                              err))))
+                                   ;; User hard coded this constrain, use it
+                                   ((pred integerp) constrain)
+                                   ;; ??? How to match nil?
+                                   ;;
+                                   ;; OK, we need the constrain but it's nil,
+                                   ;; try to calculate it based on the other two
+                                   ;; note the view to be drew only needs left, width, top & height
+                                   ;; right and bottom is only needed when some other view's constrain
+                                   ;; refers to this view's right/bottom
+                                   ;; if self-recure is t and you ends up here,
+                                   ;; too bad, there is not enough constrain, go cry in the bathroom
+                                   ;; actually, if return nil, `uikit-draw' will set width to content width
+                                   ;; so it's ok for width/height
+                                   (_ (if self-recure
+                                          nil
+                                        ,form))))))
+                   ;; not drawing, return the raw-constrain, let it be a number or lambda
+                   (,raw-xx-of view))))))))
+
 
 ;; simply return nil if operand(s) is(are) nil
-(uikit--make-special-accessor left (ignore-errors (- (uikit-right-of view nil t) (uikit-width-of view nil t))))
-(uikit--make-special-accessor right (ignore-errors (+ (uikit-left-of view nil t) (uikit-width-of view nil t))))
-(uikit--make-special-accessor top (ignore-errors (- (uikit-bottom-of view nil t) (uikit-height-of view nil t))))
-(uikit--make-special-accessor bottom (ignore-errors (+ (uikit-top-of view nil t) (uikit-height-of view nil t))))
+(uikit--make-special-accessor left (ignore-errors (- (uikit-right-of view nil t) (or (uikit-width-of view nil t) ; user configured width
+                                                                                     (uikit--content-width-of view))))) ; or content width
+(uikit--make-special-accessor right (ignore-errors (+ (uikit-left-of view nil t) (or (uikit-width-of view nil t)
+                                                                                     (uikit--content-width-of view)))))
+(uikit--make-special-accessor top (ignore-errors (- (uikit-bottom-of view nil t) (or (uikit-height-of view nil t)
+                                                                                     (uikit--content-height-of view)))))
+(uikit--make-special-accessor bottom (ignore-errors (+ (uikit-top-of view nil t) (or (uikit-height-of view nil t)
+                                                                                     (uikit--content-height-of view)))))
+;; ??? how is width and height used?
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
 
-(defun uikit-content-changed (view)
-  "Clear constrain cache & set `content-chenged' slot of VIEW."
-  (setf (uikit--left-cache-of view) nil)
-  (setf (uikit--right-cache-of view) nil)
-  (setf (uikit--top-cache-of view) nil)
-  (setf (uikit--bottom-cache-of view) nil)
-  (setf (uikit--width-cache-of view) nil)
-  (setf (uikit--height-cache-of view) nil)
-  (setf (uikit--left-cache-of view) nil)
-  (when (uikit-stackview-p view)
-    (setf (uikit--equal-spacing-space-cache-of view) nil))
-  (setf (uikit--content-changed-of view) t))
 
 ;;;; Atom View
-
+;;;;; Class
 (defclass uikit-atom-view (uikit-view)
   ((face
     :accessor uikit--face-of
@@ -409,8 +429,7 @@ face in property list will override this. "
     :documentation "Keymap on the view
 in addition to the default major and minor mode keymaps. Default to nil.
 You can set keymap in property list but this is more convenient.
-TODO Does keymap in property list override this?
-"
+TODO Does keymap in property list override this?"
     :type (or null (satisfies keymapp)))
    (property-list
     :accessor uikit--property-list-of
@@ -441,11 +460,15 @@ It is a list for the same reason as `content'.")
     :documentation "If this is t, then content needs to be recalculated.
 Every time a change that alters the visual appearance of the view is made,
 this should be set to t. But don't change this value directly, use `uikit-changed'.
-Typically this value is changed to t in`uikit-make-content' and to nil in `uikit-draw'."
+Typically this value is changed to nil in`uikit-make-content'.
+This being nil only means the content didn't change, the position of the view
+is not guaranteed to be the same."
     :type boolean))
   "A view is like a widget. It is the smallest unit of an UI.
 his class is an abstract class."
   :abstract t)
+
+;;;;; Methods
 
 (cl-defmethod uikit-make-content ((_ uikit-atom-view))
   "Make content from data, returna a list of strings, each string is a line.
@@ -457,11 +480,11 @@ Each line must have same length and should not contain any return char."
   "Make content if `content-changed' is t.
 This function returns the content just for usability.
 It's main job is to (potentially) update the content of VIEW.
-Instead, it sets `content-changed', `width', `height', `content' slots.
+It also sets `content-changed', `width', `height', `content' slots.
 So the specific `uikit-make-content' of each view class has to return their content."
   (if (uikit--content-changed-of view)
       (let ((content (cl-call-next-method view)))
-        (setf (uikit--content-changed-of view) t
+        (setf (uikit--content-changed-of view) nil
               (uikit--raw-width-of view) (length (car content))
               (uikit--raw-height-of view) (length content)
               (uikit--content-of view) content)) ; last val will be returned
@@ -481,11 +504,10 @@ So the specific `uikit-make-content' of each view class has to return their cont
 It just add properties: face, keymap, uikit-atom-view, others in property-list,
 and then call `uikit-raw-draw'."
   ;; TOTEST
-  ;; normally parent stackview handles this,
+  ;; normally parent stackview handles this (make content),
   ;; but if the view doesn't have a parent stackview
   ;; it got to do it itself
-  (when (or (not (uikit--content-of view))
-            (uikit--content-changed-of view))
+  (unless (uikit--parent-stackview-of view)
     (uikit-make-content view))
   (let ((content (uikit--content-of view))
         (all-property (append `(uikit-view ,view
@@ -509,19 +531,41 @@ and then call `uikit-raw-draw'."
                     (or y (uikit--error-nil (uikit-top-of view) "Warning: %s's top is nil" (uikit--id-of view))))))
 
 
-(cl-defmethod uikit--content-width-of ((view uikit-atom-view))
-  "Return the content width of VIEW. Only look at first line of content."
-  ;; TOTEST
-  (length (car (uikit--content-of view))))
+(defmacro uikit--content-width-of (view)
+  "Return the content width of VIEW.
+For atom-view, only look at first line of content.
+For stackview, return the sum of all subviews' length of STACK..
+This returns the literal length from left to right on screen.
 
-(cl-defmethod uikit--content-height-of ((view uikit-atom-view))
-  "Return the content height of VIEW."
+If NO-ORIENTATION is nil, consider closure orientation.
+For example, if `uikit--orientation' is 'top,
+a call to `uikit-left-of' will in turn call `uikit-top'."
   ;; TOTEST
-  (length (uikit--content-of view)))
+  `(cond ((cl-typep ,view 'uikit-atom-view)
+          (funcall uikit--content-width-of-atom-view ,view))
+         ((cl-typep ,view 'uikit-stackview)
+          (funcall uikit--content-width-of-stackview ,view))))
 
+(setq uikit--content-width-of-atom-view (lambda (view) (length (car (uikit--content-of view)))))
+
+(defmacro uikit--content-height-of (view)
+  "Return the content height of VIEW.
+
+This returns the literal length from top to bottom on screen.
+
+If NO-ORIENTATION is nil, consider closure orientation.
+For example, if `uikit--orientation' is 'top,
+a call to `uikit-left-of' will in turn call `uikit-top'."
+  ;; TOTEST
+  (cond ((cl-typep view 'uikit-atom-view)
+         `(funcall uikit--content-height-of-atom-view ,view))
+        ((cl-typep view 'uikit-stackview)
+         `(funcall uikit--content-width-of-stackview ,view))))
+
+(setq uikit--content-height-of-atom-view (lambda (view) (length (uikit--content-of view))))
 
 ;;;; Stackview
-
+;;;;; Class
 (defclass uikit-stackview (uikit-view)
   ((subview-list
     :accessor uikit--subview-list-of
@@ -561,18 +605,36 @@ Only take effect when `autolayout' is non-nil.")
     :accessor uikit--portion-list-of
     :initform nil
     :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout.")
-   (max-subview-height
-    :accessor uikit--max-subview-height-of
-    :initform (byte-compile (lambda (stackview) (cl-reduce
-                                                 '+
-                                                 (mapcar 'uikit--height-of
-                                                         (uikit--subview-list-of stackview)))))
-    :documentation "The height of the tallest subview in stackview.")
    (max-subview-height-cache
     :accessor uikit--max-subview-height-cache-of
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
+
+;;;;; Functions
+
+;; special accessor
+(defmacro uikit-max-subview-height-of (stack)
+  "Return the largest height of the subviews of stackview STACK."
+  `(funcall uikit-max-subview-height-of ,stack))
+
+(setq uikit-max-subview-height-of-v (lambda (stack) (or (uikit--max-subview-height-cache-of stack)
+                                                        (setf (uikit--max-subview-height-cache-of stack)
+                                                              (apply
+                                                               'max
+                                                               (or (mapcar (lambda (view) (uikit--content-width-of view))
+                                                                           (uikit--subview-list-of stack))
+                                                                   '(0)))))))
+
+(setq uikit-max-subview-height-of-h (lambda (stack) (or (uikit--max-subview-height-cache-of stack)
+                                                        (setf (uikit--max-subview-height-cache-of stack)
+                                                              (apply
+                                                               'max
+                                                               (or (mapcar (lambda (view) (uikit--content-width-of view))
+                                                                           (uikit--subview-list-of stack))
+                                                                   '(0)))))))
+
+(setq uikit-max-subview-height-of uikit-max-subview-height-of-v)
 
 (defun uikit-equal-spacing-space-of (stackview)
   "Return the space between subviews of STACKVIEW."
@@ -581,7 +643,9 @@ Only take effect when `autolayout' is non-nil.")
           (let ((subview-list (uikit--subview-list-of stackview)))
             ;; (stackview width - sum of subviews' width ) / (subview number - 1)
             (floor (/ (let ((result (- (uikit-width-of stackview)
-                                       (cl-reduce '+ (mapcar 'uikit--content-width-of subview-list)))))
+                                       ;; TODO replace with `uikit-content-width-of'
+                                       (cl-reduce '+ (mapcar (lambda (view) (uikit--content-width-of view)) subview-list)))))
+                        ;; TODO replace with `uikit--ensure>=0'
                         (if (< result 0)
                             0
                           result))
@@ -616,15 +680,32 @@ Only take effect when `autolayout' is non-nil.")
   (dolist (subview (uikit--subview-list-of stack))
     (uikit-draw subview)))
 
+(setq uikit--content-width-of-stackview
+      (lambda (stack)
+        (pcase (uikit--orientation-of stack)
+          ((or 'left 'right) (cl-reduce '+ (or (mapcar (lambda (view) (uikit--content-width-of view)) (uikit--subview-list-of stack))
+                                               '(0))))
+          ((or 'top 'bottom) (uikit-max-subview-height-of stack)))))
 
-(cl-defmethod uikit--content-width-of ((stack uikit-stackview))
-  "Return the content width of STACK. Return the sum of all subviews' length of STACK."
-  (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack))))
+(setq uikit--content-height-of
+      (lambda (stack)
+        (pcase (uikit--orientation-of stack)
+          ((or 'left 'right) (uikit-max-subview-height-of stack))
+          ((or 'top 'bottom) (cl-reduce '+ (or (mapcar (lambda (view) (uikit--content-width-of view)) (uikit--subview-list-of stack))
+                                               '(0))))))) ; in case the stackview doesn't have subviews
 
-(cl-defmethod uikit--content-height-of ((stack uikit-stackview))
-  "Return the content height of STACK."
-  (uikit--max-subview-height-of stack))
-
+(defun uikit--clear-drawing-cache (view)
+  "Clear the cached constrains of VIEW and its (possibly) subviews."
+  (when (cl-typep view 'uikit-stackview)
+    (mapc 'uikit--clear-drawing-cache (uikit--subview-list-of view))
+    (setf (uikit--equal-spacing-space-cache-of view) nil
+          (uikit--max-subview-height-cache-of view) nil))
+  (setf (uikit--left-cache-of view) nil
+        (uikit--right-cache-of view) nil
+        (uikit--top-cache-of view) nil
+        (uikit--bottom-cache-of view) nil
+        (uikit--width-cache-of view) nil
+        (uikit--height-cache-of view) nil))
 
 ;;;;; Helpers
 
@@ -640,64 +721,94 @@ Only take effect when `autolayout' is non-nil.")
         (append (reverse view-list)
                 (uikit--subview-list-of stackview))))
 
-;;;;; Constrain
+;;;;; Auto Layout
 
-;;;;;; Auto Layout
+;; SCRATCH
+;; (cl-letf (((symbol-function 'cdr) (symbol-function 'car))
+;;           ((symbol-function 'car) (symbol-function 'cdr)))
+;;   (cl-letf (((symbol-function 'cdr) (symbol-function 'car))
+;;             ((symbol-function 'car) (symbol-function 'cdr)))
+;;     (car '(1 2 3 4))))
+;; 1
+
+;; (cl-letf (((symbol-function 'cdr) 'car)
+;;           ((symbol-function 'car) 'cdr))
+;;   (cl-letf (((symbol-function 'cdr) 'car)
+;;             ((symbol-function 'car) 'cdr))
+;;     (car '(1 2 3 4))))
+;; END_SCRATCH
+
+(defmacro uikit--with-orientation (stackview &rest body)
+  "Evaluate BODY with orientation transformation of STACKVIEW.
+
+orientation can be 'left/bottom/right/top.
+
+'left: rotate counterclockwise 0 degree;
+'bottom:                       90 degree;
+'right:                        180 degree;
+'top:                          270 degree."
+  (declare (indent defun))
+  `(let ((orientation (pcase (uikit--orientation-of stackview)
+                        ('left 0)
+                        ('bottom 1)
+                        ('right 2)
+                        ('top 3))))
+     (let ((uikit-left-of (eval (nth orientation '(uikit-left-of uikit-bottom-of uikit-right-of uikit-top-of))))
+           (uikit-right-of (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
+           (uikit-top-of (eval (nth orientation '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of))))
+           (uikit-bottom-of (eval (nth orientation '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of))))
+           (uikit-width-of (eval (nth orientation '(uikit-width-of uikit-height-of uikit-width-of uikit-height-of))))
+           (uikit-height-of (eval (nth orientation '(uikit-height-of uikit-width-of uikit-height-of uikit-width-of))))
+           (uikit--content-height-of-atom-view (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
+           (uikit--content-height-of-stackview (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
+           (uikit--content-width-of-atom-view (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
+           (uikit--content-width-of-stackview (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
+           (uikit-max-subview-height-of (eval (nth orientation '(uikit-max-subview-height-of-h
+                                                                 uikit-max-subview-height-of-v
+                                                                 uikit-max-subview-height-of-h
+                                                                 uikit-max-subview-height-of-v)))))
+       ,@body)))
 
 (defun uikit-autolayout (stackview)
   "Ask STACKVIEW to auto layout."
-  (let* ((orientation-index (pcase (uikit--orientation-of stackview)
-                              ('left 0) ; rotate counterclockwise 0 degree
-                              ('bottom 1) ; rotate 90 degree
-                              ('right 2) ; 180 degree
-                              ('top 3))) ; 270 degree
-         (uikit-left-of (nth orientation-index '(uikit-left-of uikit-bottom-of uikit-right-of uikit-top-of)))
-         (uikit-bottom-of (nth orientation-index '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of)))
-         (uikit-right-of (nth orientation-index '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of)))
-         (uikit-top-of (nth orientation-index '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of)))
-         (uikit--content-width-of (nth orientation-index '(uikit--content-width-of uikit--content-height-of
-                                                                                   uikit--content-width-of
-                                                                                   uikit--content-height-of)))
-         (uikit--content-height-of (nth orientation-index '(uikit--content-height-of uikit--content-width-of
-                                                                                     uikit--content-height-of
-                                                                                     uikit--content-width-of)))
-         (uikit--drawing nil) ; this should default to nil, but just to make sure
-         (left (lambda (view) (uikit-left-of stackview)))
-         (space-func (pcase (uikit--autolayout-of stackview) ; function that returns the space length between subviews
-                       ('stacking (lambda () (uikit--stacking-space-of stackview)))
-                       ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))
-                       (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit--id-of stackview)))))
-         (top-func (pcase (uikit--v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
-                     ('top (lambda (view) (uikit-top-of (uikit--parent-stackview-of view))))
-                     ('center (lambda (view)
-                                (+ (uikit-top-of (uikit--parent-stackview-of view))
-                                   (/ (- (uikit--max-subview-height-of (uikit--parent-stackview-of view))
-                                         (uikit--content-height-of view)) 2))))
-                     ('bottom (lambda (view)
-                                (- (uikit-bottom-of (uikit--parent-stackview-of view))
-                                   (uikit--content-height-of view)))))))
-    (dolist (subview (uikit--subview-list-of stackview))
-      ;; autolayout yourself if you are a stackview
-      (when (cl-typep subview 'uikit-stackview)
-        (uikit-autolayout subview))
-      ;; set your parent
-      (setf (uikit--parent-stackview-of subview) stackview)
-      ;; set your left to the left value pre-calculated by last subview for you
-      ;; just shut up and use it, no complain
-      (uikit-left-of subview left)
-      ;; calculate left position for next subview
-      (setq left (lambda (view)
-                   (let ((right (uikit--error-nil
-                                 (uikit-right-of subview)
-                                 "last subview's right is nil when calculating left for %s"
-                                 (uikit--id-of view)))
-                         (space (uikit--error-nil
-                                 (funcall space-func)
-                                 "space from stackview top is nil when calculating left for %s"
-                                 (uikit--id-of view))))
-                     (+ right space))))
-      ;; top & bottom
-      (uikit-top-of subview top-func))))
+  (uikit--with-orientation stackview
+    (let* ((uikit--drawing nil) ; this should default to nil, but just to make sure
+           (left (lambda (view) (uikit-left-of stackview)))
+           (space-func (pcase (uikit--autolayout-of stackview) ; function that returns the space length between subviews
+                         ('stacking (lambda () (uikit--stacking-space-of stackview)))
+                         ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))
+                         (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit--id-of stackview)))))
+           (top-func (pcase (uikit--v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
+                       ('top (lambda (view) (uikit-top-of (uikit--parent-stackview-of view))))
+                       ('center (lambda (view)
+                                  (+ (uikit-top-of (uikit--parent-stackview-of view))
+                                     (/ (- (uikit-max-subview-height-of (uikit--parent-stackview-of view))
+                                           (uikit--content-height-of view)) 2))))
+                       ('bottom (lambda (view)
+                                  (- (uikit-bottom-of (uikit--parent-stackview-of view))
+                                     (uikit--content-height-of view)))))))
+      (dolist (subview (uikit--subview-list-of stackview))
+        ;; autolayout yourself if you are a stackview
+        (when (cl-typep subview 'uikit-stackview)
+          (uikit-autolayout subview))
+        ;; set your parent
+        (setf (uikit--parent-stackview-of subview) stackview)
+        ;; set your left to the left value pre-calculated by last subview for you
+        ;; you just shut up and use it
+        (uikit-left-of subview left)
+        ;; calculate left position for next subview
+        (setq left (lambda (view)
+                     (let ((right (uikit--error-nil
+                                   (uikit-right-of subview)
+                                   "last subview's right is nil when calculating left for %s"
+                                   (uikit--id-of view)))
+                           (space (uikit--error-nil
+                                   (funcall space-func)
+                                   "space from stackview top is nil when calculating left for %s"
+                                   (uikit--id-of view))))
+                       (+ right space))))
+        ;; top & bottom
+        (uikit-top-of subview top-func)))))
 
 ;;;; Scene
 
