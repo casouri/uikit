@@ -120,7 +120,7 @@
   (make-instance 'uikit-stackview :id "mystack")
   (setf (uikit--autolayout-of uikit//mystack) 'stacking
         (uikit--orientation-of uikit//mystack) 'top
-        (uikit--v-align-of uikit//mystack) 'bottom)
+        (uikit--v-align-of uikit//mystack) 'top)
 
   (dolist (num0 (number-sequence 0 9))
     (print num0)
@@ -160,93 +160,21 @@
     (uikit-autolayout uikit//mystack)
     (uikit-draw uikit//mystack)))
 
-
-(ert-deftest uikit-constrain-test-obsolute ()
-  "Test of constrains."
-  (let ((stack (make-instance 'uikit-stack))
-        (label0 (make-instance 'uikit-label :text "Label 0"))
-        (label1 (make-instance 'uikit-label :text "Label 1"))
-        (label2 (make-instance 'uikit-label :text "Label 2")))
-    (setf (subview-list-of stack) '(label0 label1 label2))
-    (setf (constrain-list-of stack) '((subview0-top <- parent-top)
-                                      (subview0-left <- parent-left)
-                                      (subview1-top <- parent-top)
-                                      (subview1-left <- subview1-right)
-                                      (subview2-top <- parent-top)
-                                      (subview2-left <- subview1-right)))))
-
-(ert-deftest uikit-pos-of-obsolute ()
-  "Test of `pos-of'."
-  (let ((view (make-instance 'uikit-button))
-        pos)
-    ;; left & top
-    (setf (left-of view) 10
-          (top-of view) 20)
-    (setq pos (pos-of view))
-    (should (eq (uikit-pos-x pos) 10))
-    (should (eq (uikit-pos-y pos) 20))
-
-    ;; width + right & height + bottom
-    (setf (left-of view) nil
-          (top-of view) nil
-          (width-of view) 10
-          (right-of view) 15
-          (height-of view) 20
-          (bottom-of view) 30)
-    (setq pos (pos-of view))
-    (should (eq (uikit-pos-x pos) 5))
-    (should (eq (uikit-pos-y pos) 10))
-
-    ;; not enough
-    (setf (left-of view) nil
-          (top-of view) nil
-          (width-of view) nil
-          (right-of view) 15
-          (height-of view) nil
-          (bottom-of view) nil)
-    (should-error (pos-of view))
-
-    ;; note enough #2
-    (setf (left-of view) nil
-          (top-of view) nil
-          (width-of view) nil
-          (right-of view) nil
-          (height-of view) nil
-          (bottom-of view) 30)
-    (should-error (pos-of view))))
-
-
-(ert-deftest uikit-gettter/setter-obsolute ()
-  "Test automatically generated getter/setter."
-  (let ((button (make-instance 'uikit-button :id 'mybutton :text "my button")))
-    ;; normal setter & getter
-    (mybutton.left 10)
-    (mybutton.right 10)
-    (mybutton.top 10)
-    (mybutton.bottom 10)
-    (mybutton.width 10)
-    (mybutton.height 10)
-    (should (eq (mybutton.left) 10))
-    (should (eq (mybutton.right) 10))
-    (should (eq (mybutton.top) 10))
-    (should (eq (mybutton.bottom) 10))
-    (should (eq (mybutton.width) 10))
-    (should (eq (mybutton.height) 10))
-
-    ;; calculate one from the other two
-    (mybutton.left 'null)
-    (mybutton.right 'null)
-    (mybutton.top 'null)
-    (mybutton.bottom 'null)
-    (mybutton.width 'null)
-    (mybutton.height 'null)
-
-    (mybutton.left 10)
-    (mybutton.right 20)
-    (should (eq (mybutton.width) 10))
-
-    (mybutton.top 10)
-    (mybutton.bottom 20)
-    (should (eq (mybutton.height) 10))))
-
-
+(defun uikit-test-nest-stackview ()
+  "Test nesting stackview."
+  (interactive)
+  (make-instance 'uikit-stackview :id "mystack0")
+  (make-instance 'uikit-stackview :id "mystack1")
+  (make-instance 'uikit-stackview :id "mystack2")
+  (make-instance 'uikit-button :id "mybutton")
+  (uikit-subview-append uikit//mystack0 uikit//mystack1)
+  (uikit-subview-append uikit//mystack1 uikit//mystack2)
+  (uikit-subview-append uikit//mystack2 uikit//mybutton)
+  (uikit-left-of uikit//mystack0 20)
+  (uikit-top-of uikit//mystack0 10)
+  (setf (uikit--autolayout-of uikit//mystack0) 'stacking
+        (uikit--autolayout-of uikit//mystack1) 'stacking
+        (uikit--autolayout-of uikit//mystack2) 'stacking)
+  (uikit-autolayout uikit//mystack0)
+  (uikit-test-prepare-canvas)
+  (uikit-draw uikit//mystack0))

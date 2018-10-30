@@ -203,7 +203,6 @@ CONTENT is a list of strings. Generally you want to make them have same length."
     var))
 
 ;;; Base Class
-
 ;;;; View
 ;;;;; View
 (defclass uikit-view ()
@@ -309,6 +308,7 @@ because they needs to change left/right/.../ base on their direction."
   (funcall (intern (format "%s-of" (symbol-name constrain))) view value))
 
 
+
 ;;;;; Special Accessor for View's Constrain
 
 ;; SCRATCH
@@ -326,6 +326,20 @@ because they needs to change left/right/.../ base on their direction."
 ;; (cc 1 2 3)
 ;; END_SCRATCH
 
+(defmacro uikit--orientation-h/v (stack h v)
+  "Evaluate H if orientation of STACK is `left' or `right', eval V if `top' or `bottom'."
+  `(pcase (uikit--orientation-of ,stack)
+     ((or 'left 'right) ,h)
+     ((or 'top 'bottom) ,v)))
+
+;; (defmacro uikit--with-orientation (stack left bottom right top)
+;;   "Evaluate LEFT RIGHT TOP BOTTOM base on the orientation of STACK."
+;;   `(pcase (uikit--orientation-of ,stack)
+;;      ('left ,left)
+;;      ('right ,right)
+;;      ('top ,top)
+;;      ('bottom ,bottom)))
+
 (defmacro uikit--make-special-accessor (constrain form)
   "Define special accessor for CONSTRAIN with FORM.
 FORM is calculation logic. E.g, left = right - width"
@@ -342,10 +356,8 @@ FORM is calculation logic. E.g, left = right - width"
 If `%s' slot is nil, calculate it.
 Set the slot to VALUE when VALUE non-nil.
 VALUE can be a positive integer or a (quoted) form.
-
 Form will be evaluated to get a number during drawing of VIEW,
 make sure it returns a positive integer.
-
 SELF-RECURE is set to t when a view tries to calculate its constrain
 from it's own constrains, e.g. right = left + width.
 That might end up in infinite recursion."
@@ -403,7 +415,6 @@ That might end up in infinite recursion."
 ;; ??? how is width and height used?
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
-
 
 ;;;; Atom View
 ;;;;; Class
@@ -530,39 +541,15 @@ and then call `uikit-raw-draw'."
                     (or x (uikit--error-nil (uikit-left-of view) "Warning: %s's left is nil" (uikit--id-of view)))
                     (or y (uikit--error-nil (uikit-top-of view) "Warning: %s's top is nil" (uikit--id-of view))))))
 
-
-(defmacro uikit--content-width-of (view)
-  "Return the content width of VIEW.
-For atom-view, only look at first line of content.
-For stackview, return the sum of all subviews' length of STACK..
-This returns the literal length from left to right on screen.
-
-If NO-ORIENTATION is nil, consider closure orientation.
-For example, if `uikit--orientation' is 'top,
-a call to `uikit-left-of' will in turn call `uikit-top'."
+(cl-defmethod uikit--content-width-of ((view uikit-atom-view))
+  "Return the content width of VIEW. Only look at first line of content."
   ;; TOTEST
-  `(cond ((cl-typep ,view 'uikit-atom-view)
-          (funcall uikit--content-width-of-atom-view ,view))
-         ((cl-typep ,view 'uikit-stackview)
-          (funcall uikit--content-width-of-stackview ,view))))
+  (length (car (uikit--content-of view))))
 
-(setq uikit--content-width-of-atom-view (lambda (view) (length (car (uikit--content-of view)))))
-
-(defmacro uikit--content-height-of (view)
-  "Return the content height of VIEW.
-
-This returns the literal length from top to bottom on screen.
-
-If NO-ORIENTATION is nil, consider closure orientation.
-For example, if `uikit--orientation' is 'top,
-a call to `uikit-left-of' will in turn call `uikit-top'."
+(cl-defmethod uikit--content-height-of ((view uikit-atom-view))
+  "Return the content height of VIEW."
   ;; TOTEST
-  (cond ((cl-typep view 'uikit-atom-view)
-         `(funcall uikit--content-height-of-atom-view ,view))
-        ((cl-typep view 'uikit-stackview)
-         `(funcall uikit--content-width-of-stackview ,view))))
-
-(setq uikit--content-height-of-atom-view (lambda (view) (length (uikit--content-of view))))
+  (length (uikit--content-of view)))
 
 ;;;; Stackview
 ;;;;; Class
@@ -614,27 +601,17 @@ Only take effect when `autolayout' is non-nil.")
 ;;;;; Functions
 
 ;; special accessor
-(defmacro uikit-max-subview-height-of (stack)
+(defun uikit-max-subview-height-of (stack)
   "Return the largest height of the subviews of stackview STACK."
-  `(funcall uikit-max-subview-height-of ,stack))
+  (or (uikit--max-subview-height-cache-of stack)
+      (setf (uikit--max-subview-height-cache-of stack)
+            (apply 'max
+                   (or (mapcar (uikit--orientation-h/v stack
+                                                       'uikit--content-height-of
+                                                       'uikit--content-width-of)
+                               (uikit--subview-list-of stack))
+                       '(0))))))
 
-(setq uikit-max-subview-height-of-v (lambda (stack) (or (uikit--max-subview-height-cache-of stack)
-                                                        (setf (uikit--max-subview-height-cache-of stack)
-                                                              (apply
-                                                               'max
-                                                               (or (mapcar (lambda (view) (uikit--content-width-of view))
-                                                                           (uikit--subview-list-of stack))
-                                                                   '(0)))))))
-
-(setq uikit-max-subview-height-of-h (lambda (stack) (or (uikit--max-subview-height-cache-of stack)
-                                                        (setf (uikit--max-subview-height-cache-of stack)
-                                                              (apply
-                                                               'max
-                                                               (or (mapcar (lambda (view) (uikit--content-width-of view))
-                                                                           (uikit--subview-list-of stack))
-                                                                   '(0)))))))
-
-(setq uikit-max-subview-height-of uikit-max-subview-height-of-v)
 
 (defun uikit-equal-spacing-space-of (stackview)
   "Return the space between subviews of STACKVIEW."
@@ -680,19 +657,19 @@ Only take effect when `autolayout' is non-nil.")
   (dolist (subview (uikit--subview-list-of stack))
     (uikit-draw subview)))
 
-(setq uikit--content-width-of-stackview
-      (lambda (stack)
-        (pcase (uikit--orientation-of stack)
-          ((or 'left 'right) (cl-reduce '+ (or (mapcar (lambda (view) (uikit--content-width-of view)) (uikit--subview-list-of stack))
-                                               '(0))))
-          ((or 'top 'bottom) (uikit-max-subview-height-of stack)))))
+(cl-defmethod uikit--content-width-of ((stack uikit-stackview))
+  "Return the literal content width of STACK from left to right on screen.
+Doesn't change base on orientation."
+  (uikit--orientation-h/v stack
+                          (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack)))
+                          (uikit-max-subview-height-of stack)))
 
-(setq uikit--content-height-of
-      (lambda (stack)
-        (pcase (uikit--orientation-of stack)
-          ((or 'left 'right) (uikit-max-subview-height-of stack))
-          ((or 'top 'bottom) (cl-reduce '+ (or (mapcar (lambda (view) (uikit--content-width-of view)) (uikit--subview-list-of stack))
-                                               '(0))))))) ; in case the stackview doesn't have subviews
+(cl-defmethod uikit--content-height-of ((stack uikit-stackview))
+  "Return the literal content height of STACK from top to bottom on screen.
+Doesn't change base on orientation."
+  (uikit--orientation-h/v stack
+                          (uikit-max-subview-height-of stack)
+                          (cl-reduce '+ (mapcar 'uikit--content-height-of (uikit--subview-list-of stack)))))
 
 (defun uikit--clear-drawing-cache (view)
   "Clear the cached constrains of VIEW and its (possibly) subviews."
@@ -740,9 +717,7 @@ Only take effect when `autolayout' is non-nil.")
 
 (defmacro uikit--with-orientation (stackview &rest body)
   "Evaluate BODY with orientation transformation of STACKVIEW.
-
 orientation can be 'left/bottom/right/top.
-
 'left: rotate counterclockwise 0 degree;
 'bottom:                       90 degree;
 'right:                        180 degree;
@@ -758,15 +733,7 @@ orientation can be 'left/bottom/right/top.
            (uikit-top-of (eval (nth orientation '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of))))
            (uikit-bottom-of (eval (nth orientation '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of))))
            (uikit-width-of (eval (nth orientation '(uikit-width-of uikit-height-of uikit-width-of uikit-height-of))))
-           (uikit-height-of (eval (nth orientation '(uikit-height-of uikit-width-of uikit-height-of uikit-width-of))))
-           (uikit--content-height-of-atom-view (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
-           (uikit--content-height-of-stackview (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
-           (uikit--content-width-of-atom-view (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
-           (uikit--content-width-of-stackview (eval (nth orientation '(uikit-right-of uikit-top-of uikit-left-of uikit-bottom-of))))
-           (uikit-max-subview-height-of (eval (nth orientation '(uikit-max-subview-height-of-h
-                                                                 uikit-max-subview-height-of-v
-                                                                 uikit-max-subview-height-of-h
-                                                                 uikit-max-subview-height-of-v)))))
+           (uikit-height-of (eval (nth orientation '(uikit-height-of uikit-width-of uikit-height-of uikit-width-of)))))
        ,@body)))
 
 (defun uikit-autolayout (stackview)
@@ -784,6 +751,7 @@ orientation can be 'left/bottom/right/top.
                                   (+ (uikit-top-of (uikit--parent-stackview-of view))
                                      (/ (- (uikit-max-subview-height-of (uikit--parent-stackview-of view))
                                            (uikit--content-height-of view)) 2))))
+                       ;; FIXME
                        ('bottom (lambda (view)
                                   (- (uikit-bottom-of (uikit--parent-stackview-of view))
                                      (uikit--content-height-of view)))))))
