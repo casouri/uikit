@@ -4,69 +4,15 @@
 
 *This package is in early development stage, I upload the code so I can ask specific questions in the forum.*
 
-*Check back in a year or so.*
-
-
-To try out the current stage:
-
-There are only label and button available, because I want to make auto layout work first.
-
-#+BEGIN_SRC emacs-lisp
-;; M-x eval-buffer or load uikit.el
-;; create a button
-(make-instance 'uikit-button :id "mybutton" :text "MYBUTTON")
-;; make a new buffer and prepare canvas
-(switch-to-buffer (get-buffer-create "TEST"))
-(uikit-prepare-canvas)
-;; draw the button and position X: 20 & y: 10
-(uikit-draw uikit--id-myapp-mybutton 20 10)
-;; you should be able to see a button
-#+END_SRC
-
 This package aims to provide a high level framework
 and a set of useful widgets to help developers 
 make GUI in Emacs.
 
 Features:
 
-- Text based :: Everything is text. No images *at all*. Not even overlay image.
+- Text based :: Everything is text.
 
 - Auto layout :: You never need to worry about positions,
      UIKit does all the layout arranging and content drawing.
      All you do is configure the layout and update widget
      content.
-
-- Message passing by symbols :: make a button called ='mybutton=, and define function =mybutton-pressed=, done.
-
-* Overall implementation
-  
-Each "app" is made of many "scenes", and the app has a entrance scene.
-Kind of like homepage and webpages of a web site.
-
-Each scene is made of many "view"s, or "widget" (I'll use view from now on).
-
-There are two types of views, on contains real content, like a button or a label;
-the other contains other views. The latter is "stack view". It is responsible for
-arranging "subviews" of it.
-
-So each scene is a top most stack view, and it contains other stack views or normal views,
-And those stack views contains other stackview and normal views. Basically a tree.
-
-When it's time to draw the scene, top most stack view asks its subviews for their minimal size,
-and they ask their sub views all the way to the bottom. Then auto layout take action based on pre-configured
-layout.
-After that, it tells its subviews to draw on point (x, y), then its
-subviews draws them selfs: a stack view would arrange for its own subviews and normal views will draw them self.
-
-* UML
-
-- abstract-view
-  - view
-    - button: a button
-      - switch: a button with two state
-    - label: text
-  - stack
-    - table: a stack of table cells
-    - table cell: whatever you want to put into a cell
-    - stepper: a label and two buttons
-    - progress bar: a bunch of buttons in a row
