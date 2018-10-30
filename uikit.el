@@ -866,9 +866,8 @@ Creates a buffer and segue to the entry scene."
 
 ;;;; Button
 
-(defclass uikit-button (uikit-label)
-  ((text ;; override label.text
-    :initform "Button")
+(defclass uikit-clickable (uikit-atom-view)
+  (
    (mouse-1-func
     :initarg :mouse-1-func
     :initform 'uikit-button-clicked
@@ -899,8 +898,13 @@ It can be either a symbol or a lambda.")
     :accessor uikit--help-of
     :documentation "This is displayed when mouse is on button."
     :type string))
-  "A button.")
+  :abstract t
+  "A clickable item.")
 
+(defclass uikit-button (uikit-label uikit-clickable)
+  ((text ;; override label.text
+    :initform "Button"))
+  "A Button.")
 
 (cl-defmethod initialize-instance :after ((button uikit-button) &rest _)
   "Add help to properties."
