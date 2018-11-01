@@ -476,16 +476,15 @@ This being nil only means the content didn't change, the position of the view
 is not guaranteed to be the same."
     :type boolean))
   "A view is like a widget. It is the smallest unit of an UI.
-his class is an abstract class."
-  :abstract t)
+his class is an abstract class.")
 
 ;;;;; Methods
 
-(cl-defmethod uikit-make-content ((_ uikit-atom-view))
+(cl-defmethod uikit-make-content ((view uikit-atom-view))
   "Make content from data, returna a list of strings, each string is a line.
 Each line must have same length and should not contain any return char."
-  ;; abstract
-  nil)
+  ;; simply return the content
+  (uikit--content-of view))
 
 (cl-defmethod uikit-make-content :around ((view uikit-atom-view))
   "Make content if `content-changed' is t.
