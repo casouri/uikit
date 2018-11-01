@@ -531,7 +531,13 @@ and then call `uikit-raw-draw'."
         (undo-inhibit-record-point t))
     (dolist (index (number-sequence 0 (1- (length content))))
       (setf line (gv-ref (nth index content)))
-      (setf (gv-deref line) (substring (gv-deref line) 0 width))
+      (setf (gv-deref line)
+            ;; return the line with it length regulated to `width'
+            (let ((offset (- width (length (gv-deref line)))))
+              (if (> offset 0) ;; required width longer than actual length
+                  (concat (gv-deref line) (make-string offset ?\s))
+                ;; required width shorter than actual length
+                (substring (gv-deref line) 0 width))))
       (add-text-properties 0 width all-property (gv-deref line)))
     ;; we just set cache position, draw at there
     (uikit-raw-draw (cl-subseq content 0 height)
