@@ -518,7 +518,7 @@ and then call `uikit-raw-draw'."
   (unless (uikit--parent-stackview-of view)
     (uikit-make-content view))
   (let ((content (uikit--content-of view))
-        (all-property (append `(uikit-view ,view
+        (all-property (append `(uikit-view ,(gv-ref view)
                                            face ,(uikit--face-of view)
                                            keymap ,(uikit--keymap-of view))
                               (uikit--property-list-of view)))
