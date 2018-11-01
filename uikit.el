@@ -495,8 +495,6 @@ So the specific `uikit-make-content' of each view class has to return their cont
   (if (uikit--content-changed-of view)
       (let ((content (cl-call-next-method view)))
         (setf (uikit--content-changed-of view) nil
-              (uikit--raw-width-of view) (length (car content))
-              (uikit--raw-height-of view) (length content)
               (uikit--content-of view) content)) ; last val will be returned
     ;; content not changed, just return it
     (uikit--content-of view)))
