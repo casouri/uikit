@@ -691,15 +691,30 @@ Doesn't change base on orientation."
 
 (defun uikit-subview-append (stackview &rest view-list)
   "Append views in VIEW-LIST to STACKVIEW's `subview-list'."
+  ;; NOTEST
   (setf (uikit--subview-list-of stackview )
         (append (uikit--subview-list-of stackview)
                 view-list)))
 
 (defun uikit-subview-push (stackview &rest view-list)
   "Push views in VIEW-LIST to STACKVIEW's `subview-list'."
+  ;; NOTEST
   (setf (uikit--subview-list-of stackview )
         (append (reverse view-list)
                 (uikit--subview-list-of stackview))))
+
+(defun uikit-subview-delete (stackview &rest view-list)
+  "Remove every view in VIEW-LIST from STACKVIEW."
+  ;; TOTEST
+  ;; TODO optimize?
+  (mapc (lambda (view) (delete view (uikit--subview-list-of stackview))) view-list))
+
+(defun uikit-subview-drop (stackview &optional index)
+  "Drop subview at INDEX of STACKVIEW.
+If INDEX is nil, drop the last one."
+  ;; TOTEST
+  (-remove-at (or index (1- (length (uikit--subview-list-of stackview))))
+              (uikit--subview-list-of stackview)))
 
 ;;;;; Auto Layout
 
