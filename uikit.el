@@ -875,7 +875,7 @@ Creates a buffer and segue to the entry scene."
     :initform "Text"
     :documentation "The text of label."
     :type string))
-  "A label is a one-line text.")
+  "A label is some text.")
 
 (cl-defmethod uikit-make-content ((label uikit-label))
   "Return content of LABEL."
