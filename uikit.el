@@ -464,11 +464,7 @@ each element of the list is an cons of PROPERTY and VALUE that are eligibel for 
 But it doesn't include the padding spaces around, since size might
 change more frequent that the content. See `padded-content'.
 It is a list of strings, each string is a line.")
-   (padded-content
-    :accessor uikit--padded-content-of
-    :initform ()
-    :documentation "The actual text that is drew on canvas, with padded space.
-It is a list for the same reason as `content'.")
+   ;; ??? keep it or not?
    (content-changed
     :accessor uikit--content-changed-of
     :initform t
