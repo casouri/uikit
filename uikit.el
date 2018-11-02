@@ -600,22 +600,22 @@ It can be nil, 'stacking, 'equal-spacing, 'portion."
     :documentation "Spacing between subviews when using 'equal-spacing auatolayout.")
    (v-align
     :accessor uikit--v-align-of
-    :initarg :v-algin
+    :initarg :v-align
     :initform 'top
     :type symbol
     :documentation "Vertical alignment of subviews. Can be 'top, 'center, 'bottom.
 Only take effect when `autolayout' is non-nil.")
    (orientation
-    :initarg :orientation
     :accessor uikit--orientation-of
+    :initarg :orientation
     :initform 'left
     :type symbol
     :documentation "The orientation of the stackview. 'left (default) means normal orientation.
 'top means rotate clockwise: top becomes left, left becomes bottom, etc.")
-   (portion-list ;; TODO
-    :accessor uikit--portion-list-of
+   (max-subview-height-cache
+    :accessor uikit--max-subview-height-cache-of
     :initform nil
-    :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout."))
+    :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
 ;;;;; Methods
