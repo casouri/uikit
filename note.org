@@ -167,7 +167,10 @@ Take width and height into account
 (setq mylabel (make-instance 'uikit-label :id 'label :text "hhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh\nhhhhhhhhhhhhhhhhhhhhhhhhhh"))
 (benchmar-run 1000 (uikit-draw mylabel mypos))
 (0.15087099999999998 1 0.08625299999999925)
-
+;; compare to:
+(benchmark-run 1000 (insert "a"))
+(0.177493 1 0.12036200000000008)
+(0.146757 0 0.0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun uikit-test-autolayout-equal-spacing ()
@@ -191,6 +194,19 @@ Take width and height into account
 (0.228055 1 0.07802699999999874)
 #+END_SRC
 
+* File Structure
+- Cutomize
+- Variable
+- Base Structs
+- Base Functions
+- Base Classes
+- Subclasses
+- Debug Helper
+
+In each class:
+
+- Class :: class definition, init function, slot getter/setter
+- Methods :: functions
 
 * Questions to ask
 - pos用con还是用struct
