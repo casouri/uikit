@@ -559,6 +559,10 @@ and then call `uikit-raw-draw'."
   ;; TOTEST
   (length (uikit--content-of view)))
 
+(cl-defmethod uikit-content-changed ((view uikit-atom-view))
+  "Let UIKit know VIEW's content is changed."
+  (setf (uikit--content-changed-of view) t))
+
 ;;;; Stackview
 ;;;;; Class
 (defclass uikit-stackview (uikit-view)
