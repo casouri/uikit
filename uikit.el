@@ -575,6 +575,7 @@ and then call `uikit-raw-draw'."
 It can be nil, 'stacking, 'equal-spacing, 'portion."
     :type symbol)
    (stacking-space
+    :initarg :stacking-space
     :accessor uikit--stacking-space-of
     :initform 0
     :type integer
