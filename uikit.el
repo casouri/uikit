@@ -220,26 +220,32 @@ so make sure to include app name as prefix to avoid name clash.
 (Yeah you never escape from prefix)"
     :type (or null string))
    (left
+    :initarg :left
     :accessor uikit--raw-left-of
     :initform nil
     :documentation "The left of view. Can be positive integer of (lambda (view)).")
    (right
+    :initarg :right
     :accessor uikit--raw-right-of
     :initform nil
     :documentation "The right of view. Can be positive integer of (lambda (view)).")
    (top
+    :initarg :top
     :accessor uikit--raw-top-of
     :initform nil
     :documentation "The top of view. Can be positive integer of (lambda (view)).")
    (bottom
+    :initarg :bottom
     :accessor uikit--raw-bottom-of
     :initform nil
     :documentation "The bottom of view. Can be positive integer of (lambda (view)).")
    (width
+    :initarg :width
     :accessor uikit--raw-width-of
     :initform nil
     :documentation "The width of view. Can be positive integer of (lambda (view)).")
    (height
+    :initarg :height
     :accessor uikit--raw-height-of
     :initform nil
     :documentation "The height of view. Can be positive integer of (lambda (view)).")
