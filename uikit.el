@@ -55,14 +55,6 @@
 (defvar-local uikit-buffer-scene nil
   "The scene object of current buffer.")
 
-(defface uikit-button-face '((t (:weight bold :underline t)))
-  "Face used for UIKit buttons."
-  :group 'uikit)
-
-(defface uikit-mouse-face '((t (:inherit highlight)))
-  "Face used when mouse is on button."
-  :group 'uikit)
-
 (defvar-local uikit-buffer-scene nil
   "The scene of this buffer.")
 
@@ -288,17 +280,16 @@ Used to check if the view is within the stackview on screen."))
   "Parent of `uikit-atom-view' and `uikit-stackview'."
   :abstract t)
 
-;;;;; Process :id
-
 (defsubst uikit-by-id (id)
   "Return the view by ID."
   (intern (format "uikit//%s" id)))
 
 (cl-defmethod initialize-instance :after ((view uikit-view) &rest _)
-  "Process the :id key. Create a variable `uikit--id-ID' as an alias of the view.
-e.g. uikit--id-mybutton for id \"mybutton\"."
-  (setf (symbol-value (intern (format "uikit//%s" (uikit--id-of view))))
-        view))
+  "Process the :id key. Create a variable `uikit//ID' as an alias of the view (If there is any).
+e.g. uikit//mybutton for id \"mybutton\"."
+  (when (uikit--id-of view)
+    (setf (symbol-value (intern (format "uikit//%s" (uikit--id-of view))))
+          view)))
 
 ;;;;; Universal Accessor: Getter & Setter
 
@@ -546,8 +537,26 @@ and then call `uikit-raw-draw'."
       (add-text-properties 0 width all-property (gv-deref line)))
     ;; we just set cache position, draw at there
     (uikit-raw-draw (cl-subseq content 0 height)
-                    (or x (uikit--error-nil (uikit-left-of view) "Warning: %s's left is nil" (uikit--id-of view)))
-                    (or y (uikit--error-nil (uikit-top-of view) "Warning: %s's top is nil" (uikit--id-of view))))))
+                    (or x (uikit--error-nil (uikit-left-of view)
+                                            "Warning: %s(%s)'s left is nil"
+                                            (uikit-buttonize (uikit--id-of view) (lambda () (interactive) (print (object-print view))))
+                                            (eieio-object-class-name view)))
+                    (or y (uikit--error-nil (uikit-top-of view)
+                                            "Warning: %s(%s)'s top is nil"
+                                            (uikit-buttonize (uikit--id-of view) (lambda () (interactive) (print (object-print view))))
+                                            (eieio-object-class-name view))))))
+
+(defun uikit-buttonize (str func &optional return-func mouse-2-func mouse-3-func)
+  "Make a button string from STR which run FUNC on click.
+If RETURN-FUNC, MOUSE-2-FUNC, MOUSE-3-FUNC are set if non-nil.
+By default RETURN-FUNC used FUNC when RETURN-FUNC is nil."
+  (propertize str 'keymap (let ((map (make-sparse-keymap)))
+                            (define-key map (kbd "<mouse-1>") func)
+                            (define-key map (kbd "<mouse-2>") mouse-2-func)
+                            (define-key map (kbd "<mouse-3>") mouse-3-func)
+                            (define-key map (kbd "<return>") (or return-func func))
+                            map)
+              'face 'uikit-button-face))
 
 (cl-defmethod uikit--content-width-of ((view uikit-atom-view))
   "Return the content width of VIEW. Only look at first line of content."
@@ -898,7 +907,6 @@ Creates a buffer and segue to the entry scene."
                      (make-instance (uikit-app-entry-scene app)))))
 
 ;;; Subclass
-
 ;;;; Label
 
 (defclass uikit-label (uikit-atom-view)
@@ -915,9 +923,9 @@ Creates a buffer and segue to the entry scene."
   ;; TOTEST
   (split-string (uikit--text-of label) "\n"))
 
-;;;; Button
+;;;; Clickable
 
-(defclass uikit-clickable (uikit-atom-view)
+(defclass uikit-clickable ()
   ((mouse-1-func
     :initarg :mouse-1-func
     :initform 'uikit-button-clicked
@@ -951,12 +959,7 @@ It can be either a symbol or a lambda.")
   "A clickable item."
   :abstract t)
 
-(defclass uikit-button (uikit-label uikit-clickable)
-  ((text ;; override label.text
-    :initform "Button"))
-  "A Button.")
-
-(cl-defmethod initialize-instance :after ((button uikit-button) &rest _)
+(cl-defmethod initialize-instance :after ((button uikit-clickable) &rest _)
   "Add help to properties."
   ;; TOTEST
   (setf (uikit--keymap-of button) (let ((map (make-sparse-keymap)))
@@ -964,10 +967,53 @@ It can be either a symbol or a lambda.")
                                     (define-key map (kbd "<mouse-2>") (uikit--mouse-2-func-of button))
                                     (define-key map (kbd "<mouse-3>") (uikit--mouse-3-func-of button))
                                     (define-key map (kbd "<return>") (uikit--return-func-of button))
-                                    map))
+                                    map)))
+;;;; Editable
+(defclass uikit-editable ()
+  ((edit-mode
+    :initform nil
+    :accessor uikit--edit-mode-of
+    :type boolean
+    :documentation "Whether the table is in delete mode.
+In this mode cells are appended with a DELETE button,
+and the table is appended with a ADD button to add new cell.")
+   (edit-mode-hook
+    :initargg :edit-mode-hook
+    :initform nil
+    :accessor uikit--edit-mode-hook-of
+    :documentation "The hook that runs when toggling edit mode.
+The hook should take the view as argument."))
+  "A view that have edit-mode."
+  :abstract t)
+
+(cl-defmethod uikit-edit-mode :around ((view uikit-editable)) &optional onoff
+  "Run `edit-mode-hook'."
+  (cl-call-next-method view onoff)
+  (run-hook-with-args (uikit--edit-mode-hook-of view) view))
+
+;;;; Button
+
+;;;;; Variables
+
+(defface uikit-button-face '((default . (:box t :weight bold)))
+  "Face used by uikit-button.")
+
+(defface uikit-button-mouse-face '((t . (:inherit highlight)))
+  "Face used when mouse over a uikit button.")
+
+;;;;; Class
+
+(defclass uikit-button (uikit-label uikit-clickable)
+  ((text ;; override label.text
+    :initform "Button"))
+  "A Button.")
+
+(cl-defmethod initialize-instance :after ((button uikit-clickable) &rest _)
+  "Add help to properties."
+  ;; TOTEST
   (setf (uikit--face-of button) 'uikit-button-face)
   (setf (uikit--property-list-of button)
-        (append `(help-echo ,(uikit--help-of button) mouse-face uikit-mouse-face) (uikit--property-list-of button))))
+        (append `(help-echo ,(uikit--help-of button) mouse-face uikit-button-mouse-face) (uikit--property-list-of button))))
 
 
 (defun uikit-button-clicked ()
@@ -975,7 +1021,238 @@ It can be either a symbol or a lambda.")
   (interactive)
   (message "Button pressed"))
 
-;;; Debug
+;;;; Table
+;;;;; Class
+;;;;;; Table
+(defclass uikit-table (uikit-stackview)
+  ((autolayout
+    :initform 'stacking)
+   (before-add-cell-hook
+    :initarg :before-add-cell-hook
+    :initform nil
+    :accessor uikit--before-add-cell-hook-of
+    :documentation "Hooks run before table adds a cell. Each hook is called by arglist: (table cell).")
+   (after-add-cell-hook
+    :initarg :after-add-cell-hook
+    :initform nil
+    :accessor uikit--after-add-cell-hook-of
+    :documentation "Hooks run after table adds a cell. Each hook is called by arglist: (table cell).")
+   (before-delete-cell-hook
+    :initarg :before-delete-cell-hook
+    :initform nil
+    :accessor uikit--before-delete-cell-hook-of
+    :documentation "Hooks run before table deletes a cell. Each hook is called by arglist: (table cell).")
+   (after-delete-cell-hook
+    :initarg :after-delete-cell-hook
+    :initform nil
+    :accessor uikit--after-delete-cell-hook-of
+    :documentation "Hooks run after table deletes a cell. Each hook is called by arglist: (table cell).")
+   (mouse-over-face
+    :initarg :mouse-over-face
+    :initform nil
+    :accessor uikit--mouse-over-face-of
+    :documentation "The face used when mouse is over a cell.")
+   (new-cell-func
+    :initarg :new-cell-func
+    :initform (lambda (table) (uikit-add-cell table (uikit-plain-cell :title "A Cell") ))
+    :accessor uikit--new-cell-func-of
+    :documentation "The function that takes the table as argument
+and return a cell (to be added to table).")
+   (header
+    :initarg :header
+    :initform nil
+    :accessor uikit--header-of
+    :documentation "The header of table, a cell.")
+   (footer
+    :initarg :footer
+    :initform nil
+    :accessor uikit--footer-of
+    :documentation "The footer of table, a cell.")
+   (title
+    :initarg :title
+    :initform nil
+    :accessor uikit--title-of
+    :documentation "The tile of table. It is displayed in header if non-nil.")
+   (footnote
+    :initarg :footnote
+    :initform nil
+    :accessor uikit--footnote-of
+    :documentation "The footnote of table. It is displayed in footer if non-nil."))
+  "A table.")
+
+(cl-defmethod initialize-instance :after ((table uikit-table) &rest _)
+  "Set title and footnote if there is any."
+  (let ((title (uikit--title-of table))
+        (footnote (uikit--footnote-of table)))
+    (when title (setf (uikit--header-of table)
+                      (uikit-plain-cell
+                       :title title)))
+    (when footnote (setf (uikit--footer-of table)
+                         (uikit-plain-cell
+                          :title footnote)))))
+
+(cl-defmethod uikit-change-title ((table uikit-table) title)
+  "Change TABLE's title to TITLE."
+  (setf (uikit--title-of table) title)
+  (uikit-change-title (uikit--header-of table) title))
+
+(cl-defmethod uikit-change-footnote ((table uikit-table) footnote)
+  "Change TABLE's footnote to FOOTNOTE."
+  (setf (uikit--footnote-of table) footnote)
+  (uikit-change-title (uikit--footer-of table) footnote))
+
+(cl-defmethod uikit--subview-list-of :around ((table uikit-table))
+  "Return the subview list of TABLE."
+  (remove nil (append (list (uikit--header-of table)) (cl-call-next-method table) (list (uikit--footer-of table)))))
+
+
+;;;;;; Editable Table
+(defclass uikit-editable-table (uikit-table uikit-editable)
+  ((add-button-cell
+    :initarg :add-button-cell
+    :initform nil ;; set at init
+    :accessor uikit--add-button-cell-of
+    :documentation "The cell with a button that can add a new cell to
+the table in edit mode."))
+  "Table with edit-mode - add/delete buttons are added to table temperately.")
+
+(cl-defmethod :after initialize-instance ((table uikit-editable-table) &rest _)
+  "Set add button cell and header edit button for TABLE."
+  (uikit-subview-append (uikit--header-of table)
+                        (uikit-button :text "EDIT"
+                                      :mouse-1-func
+                                      (lambda () (interactive)
+                                        (uikit-edit-mode table))))
+  (setf (uikit--add-button-cell-of table)
+        (make-instance
+         'uikit-table-cell
+         :subview-list
+         `(,(make-instance
+             'uikit-button
+             :text " + "
+             :mouse-1-func (lambda () (interactive)
+                             (uikit-add-cell table
+                                             (funcall (uikit--new-cell-func-of table) table))))))))
+
+;;;;;; Table Cell
+(defclass uikit-table-cell (uikit-stackview)
+  ((autolayout
+    :initform 'equal-spacing)
+   (delete-button
+    :initarg :delete-button
+    :initform nil ; but this will be set in init so it's not really nil
+    :accessor uikit--delete-button-of
+    :documentation "The delete button of cell."))
+  "A cell of a table.")
+
+(cl-defmethod initialize-instance :after ((cell uikit-table-cell) &rest _)
+  "Set delete-button for CELL."
+  (setf (uikit--delete-button-of cell)
+        (make-instance 'uikit-button :text " X " :mouse-1-func (lambda () (interactive) (uikit-delete-cell cell)))))
+
+;;;;;; Plain Cell
+(defclass uikit-plain-cell (uikit-table-cell)
+  ((title
+    :initarg :title
+    :initform "A Table"
+    :accessor uikit--title-of
+    :type string
+    :documentation "The title of the cell.")
+   (title-view
+    :initform nil
+    :accessor uikit--title-view-of
+    :documentation "The label view displayed by cell.")))
+
+(cl-defmethod initialize-instance :after ((cell uikit-plain-cell) &rest _)
+  "Create cell contents."
+  (uikit-subview-append cell (setf (uikit--title-view-of cell)
+                                   (uikit-label :text (uikit--title-of cell)))))
+
+(cl-defmethod uikit-change-title ((cell uikit-plain-cell) title)
+  "Change CELL's title to TITLE."
+  (setf (uikit--title-of cell)
+        title
+        (uikit--text-of (uikit--title-view-of cell))
+        title))
+
+;;;;; Methods
+;;;;;; Add/Delete Cell
+(cl-defmethod uikit-add-cell ((cell uikit-table-cell) &optional index)
+  "Add CELL to its table at INDEX.
+INDEX nil means append."
+  (uikit-add-cell (uikit--parent-stackview-of cell) cell index))
+
+(cl-defmethod uikit-add-cell ((table uikit-table) (cell uikit-table-cell) &optional index)
+  "Add CELL to TABLE at INDEX.
+INDEX nil means append."
+  ;; TOTEST
+  ;; DASH
+  ;; TODO optimize
+  ;; TODO handle index error
+  (run-hook-with-args (uikit--before-add-cell-hook-of table) table cell)
+  (setf (uikit--subview-list-of table)
+        (-insert-at (or index (length (uikit--subview-list-of table)))
+                    cell (uikit--subview-list-of table)))
+  (run-hook-with-args (uikit--after-add-cell-hook-of table) table cell))
+
+(cl-defmethod uikit-delete-cell ((cell uikit-table-cell))
+  "Delete CELL from it table."
+  ;; TOTEST
+  (uikit-delete-cell (uikit--parent-stackview-of cell) cell))
+
+(cl-defmethod uikit-delete-cell ((table uikit-table) (cell uikit-table-cell))
+  "Delete CELL from TABLE."
+  ;; TOTEST
+  (run-hook-with-args (uikit--before-delete-cell-hook-of table) table cell)
+  (delete cell (uikit--subview-list-of table))
+  (run-hook-with-args (uikit--after-delete-cell-hook-of table) table cell))
+
+;;;;;; Edit Mode
+(defun uikit-toggle-edit-mode ()
+  ;; TODO toggle edit mode of view at point
+  )
+
+(cl-defmethod uikit-edit-mode ((table uikit-editable-table) &optional onoff)
+  "Toggle edit mode of TABLE.
+If ONOFF is non-nil, use it to control on/off:
+ONOFF >= 0 is on, ONOFF < 0 is off.
+If ONOFF is nil, toggle on if currently off and vice versa."
+  (if (if onoff
+          (< onoff 0)
+        (uikit--edit-mode-of table))
+      ;; turn off
+      (progn
+        (setf (uikit--edit-mode-of table) nil)
+        (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit--header-of table))
+                                                      (equal cell (uikit--footer-of table)))
+                                             (uikit-edit-mode cell -1))) table)
+        (uikit-subview-delete table (uikit--add-button-cell-of table)))
+    ;; turn on
+    (setf (uikit--edit-mode-of table) t)
+    (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit--header-of table))
+                                                  (equal cell (uikit--footer-of table)))
+                                         (uikit-edit-mode cell 1))) table)
+    (uikit-subview-append table (uikit--add-button-cell-of) table))
+  (uikit-content-changed table))
+
+(cl-defmethod uikit-edit-mode ((cell uikit-table-cell) &optional onoff)
+  "Toggle edit mode of CELL.
+If ONOFF >= 0, toggle on, otherwise toggle off.
+If ONOFF is nil, toggle on if currently off and vice versa."
+  (if (if onoff
+          (< onoff 0)
+        (uikit--edit-mode-of cell))
+      ;; turn off: remove delete button
+      (progn
+        (setf (uikit--edit-mode-of cell) nil)
+        (uikit-subview-delete cell (uikit--delete-button-of cell)))
+    ;; turn on: add delete button
+    (setf (uikit--edit-mode-of cell) t)
+    (uikit-subview-append cell (uikit--delete-button-of cell))))
+
+
+
+;;; Debug Helper
 
 (defun uikit-top-view-at-point (&optional point)
   "Return the top (most inner) view at POINT or (point)."
