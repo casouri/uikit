@@ -687,18 +687,24 @@ Doesn't change base on orientation."
         (uikit--width-cache-of view) nil
         (uikit--height-cache-of view) nil))
 
+(cl-defmethod uikit-content-changed ((stack uikit-stackview))
+  "Mark every subview of STACK as content changed."
+  (mapc #'uikit-content-changed (uikit--subview-list-of stack)))
+
+
+
 ;;;;; Helpers
 
 (defun uikit-subview-append (stackview &rest view-list)
   "Append views in VIEW-LIST to STACKVIEW's `subview-list'."
-  ;; NOTEST
+  ;; TOTEST
   (setf (uikit--subview-list-of stackview )
         (append (uikit--subview-list-of stackview)
                 view-list)))
 
 (defun uikit-subview-push (stackview &rest view-list)
   "Push views in VIEW-LIST to STACKVIEW's `subview-list'."
-  ;; NOTEST
+  ;; TOTEST
   (setf (uikit--subview-list-of stackview )
         (append (reverse view-list)
                 (uikit--subview-list-of stackview))))
