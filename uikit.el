@@ -668,7 +668,11 @@ Only take effect when `autolayout' is non-nil.")
   "Return the literal content width of STACK from left to right on screen.
 Doesn't change base on orientation."
   (uikit--orientation-h/v stack
-                          (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack)))
+                          (+ (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack)))
+                             (if (equal (uikit--autolayout-of stack) 'stacking)
+                                 (* (1- (length (uikit--subview-list-of stack)))
+                                    (uikit--ensure>=0 (uikit--stacking-space-of stack)))
+                               0))
                           (uikit-max-subview-height-of stack)))
 
 (cl-defmethod uikit--content-height-of ((stack uikit-stackview))
@@ -676,7 +680,11 @@ Doesn't change base on orientation."
 Doesn't change base on orientation."
   (uikit--orientation-h/v stack
                           (uikit-max-subview-height-of stack)
-                          (cl-reduce '+ (mapcar 'uikit--content-height-of (uikit--subview-list-of stack)))))
+                          (+ (cl-reduce '+ (mapcar 'uikit--content-height-of (uikit--subview-list-of stack)))
+                             (if (equal (uikit--autolayout-of stack) 'stacking)
+                                 (* (1- (length (uikit--subview-list-of stack)))
+                                    (uikit--ensure>=0 (uikit--stacking-space-of stack)))
+                               0))))
 
 (defun uikit--clear-drawing-cache (view)
   "Clear the cached constrains of VIEW and its (possibly) subviews."
