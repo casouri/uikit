@@ -722,7 +722,18 @@ If INDEX is nil, drop the last one."
   (-remove-at (or index (1- (length (uikit--subview-list-of stackview))))
               (uikit--subview-list-of stackview)))
 
-;;;;; Auto Layout
+(defmacro uikit-dosubview (var stackview &rest body)
+  "Bind VAR to each subviews of STACKVIEW.
+And evaluate BODY for each."
+  (declare (indent 2))
+  `(dolist (,var (uikit--subview-list-of stackview))
+     ,@body))
+
+(defmacro uikit-mapc-subview (func stackview)
+  "Call `mapc' with FUNC and subview list of STACKVIEW."
+  `(mapc #',func (uikit--subview-list-of stackview)))
+
+;;;; Auto Layout
 
 ;; SCRATCH
 ;; (cl-letf (((symbol-function 'cdr) (symbol-function 'car))
