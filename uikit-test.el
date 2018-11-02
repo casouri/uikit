@@ -114,6 +114,19 @@
   (uikit-test-prepare-canvas)
   (uikit-draw uikit//mystack))
 
+(defun uikit-test-autolayout-stacking-space ()
+  "Test stacking space."
+  (interactive)
+  (make-instance 'uikit-stackview :id "mystack"
+                 :autolayout 'stacking
+                 :stacking-space 5
+                 :subview-list (list (make-instance 'uikit-button) (make-instance 'uikit-button)))
+  (uikit-left-of uikit//mystack 20)
+  (uikit-top-of uikit//mystack 10)
+  (uikit-autolayout uikit//mystack)
+  (uikit-test-prepare-canvas)
+  (uikit-draw uikit//mystack))
+
 (defun uikit-test-autolayout-bulk ()
   "Test autolayout."
   (interactive)
@@ -123,7 +136,6 @@
         (uikit--v-align-of uikit//mystack) 'top)
 
   (dolist (num0 (number-sequence 0 9))
-    (print num0)
     (uikit-subview-append
      uikit//mystack
      (make-instance 'uikit-stackview :id (format "mystack%d" num0)))
@@ -138,10 +150,25 @@
   (uikit-top-of uikit//mystack 10)
   ;; (uikit-right-of uikit//mystack 60)
   ;; (setf (uikit--autolayout-of uikit//mystack) 'equal-spacing)
-  (let ((lexical-binding t))
+  (let ((lexical-binding t)
+        ;; (gc-cons-threshold 20000000)
+        )
     (uikit-test-prepare-canvas)
     (uikit-autolayout uikit//mystack)
-    (uikit-draw uikit//mystack)))
+    (uikit-draw uikit//mystack)
+    ;; (print (benchmark-run 1000 (uikit-draw uikit//mystack)))
+    ))
+
+(defun uikit-test-padding ()
+  "Test that the content is padded with space when each lines are not in the same length.
+There should be spacing in the 2nd line."
+  (interactive)
+  (uikit-test-autolayout-bulk)
+  (make-instance 'uikit-label :id "mylabel")
+  (setf (uikit--text-of uikit//mylabel) "##########\n#####\n##########")
+  (uikit-left-of uikit//mylabel 20)
+  (uikit-top-of uikit//mylabel 10)
+  (uikit-draw uikit//mylabel))
 
 (defun uikit-test-autolayout-equal-spacing ()
   "Test autolayout."
@@ -178,3 +205,11 @@
   (uikit-autolayout uikit//mystack0)
   (uikit-test-prepare-canvas)
   (uikit-draw uikit//mystack0))
+
+
+(ert-deftest uikit-table-subview-list ()
+  "Test subview list for header and footer."
+  (make-instance 'uikit-table-cell :id "myheader")
+  (make-instance 'uikit-table-cell :id "myfooter")
+  (make-instance 'uikit-table :id "mytable" :header uikit//myheader :footer uikit//myfooter)
+  (should (equal (uikit--subview-list-of uikit//mytable) (list uikit//myheader uikit//myfooter))))
