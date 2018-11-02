@@ -210,10 +210,9 @@ CONTENT is a list of strings. Generally you want to make them have same length."
 ;;;; View
 ;;;;; View
 (defclass uikit-view ()
-  (;; not required in init
-   (id
+  ((id
     :initarg :id
-    :initform nil
+    :initform "anonymous"
     :accessor uikit--id-of
     :documentation "The identification of this view. Should be a string.
 Uikit creates a variable`uikit//ID' for the view,
