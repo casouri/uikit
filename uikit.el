@@ -587,27 +587,25 @@ It can be nil, 'stacking, 'equal-spacing, 'portion."
     :documentation "Spacing between subviews when using 'equal-spacing auatolayout.")
    (v-align
     :accessor uikit--v-align-of
+    :initarg :v-algin
     :initform 'top
     :type symbol
     :documentation "Vertical alignment of subviews. Can be 'top, 'center, 'bottom.
 Only take effect when `autolayout' is non-nil.")
    (orientation
+    :initarg :orientation
     :accessor uikit--orientation-of
     :initform 'left
     :type symbol
     :documentation "The orientation of the stackview. 'left (default) means normal orientation.
 'top means rotate clockwise: top becomes left, left becomes bottom, etc.")
-   (portion-list
+   (portion-list ;; TODO
     :accessor uikit--portion-list-of
     :initform nil
-    :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout.")
-   (max-subview-height-cache
-    :accessor uikit--max-subview-height-cache-of
-    :initform nil
-    :documentation "Cache of `max-subview-height'."))
+    :documentation "A list of portions of subviews in stackview in order when using 'portion autolayout."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
 
-;;;;; Functions
+;;;;; Methods
 
 ;; special accessor
 (defun uikit-max-subview-height-of (stack)
