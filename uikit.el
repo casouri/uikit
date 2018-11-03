@@ -207,7 +207,7 @@ Expands to (defclass CLASSNAME SUPERCLASS-LIST SLOT-LIST REST).
 Additionally, it gives you a free initarg, accessor, writer and reader
 in following conventions:
 :initarg :slotname
-:accessor uikit--slotname-of
+:accessor uikit-slotname-of
 :writer uikit--slotname-set
 :reader uikit--slotname-get
 
@@ -225,7 +225,7 @@ Any user defined slot options will override these automatically generated ones."
                           (list :initarg
                                 (intern (format ":%s" slot-name))
                                 :accessor
-                                (intern (format "uikit--%s-of" slot-name))
+                                (intern (format "uikit-%s-of" slot-name))
                                 :reader
                                 (intern (format "uikit--%s-get" slot-name))
                                 :writer
@@ -239,7 +239,7 @@ Any user defined slot options will override these automatically generated ones."
   ((id
     :initarg :id
     :initform "anonymous"
-    :accessor uikit--id-of
+    :accessor uikit-id-of
     :documentation "The identification of this view. Should be a string.
 Uikit creates a variable`uikit//ID' for the view,
 so make sure to include app name as prefix to avoid name clash.
@@ -247,67 +247,67 @@ so make sure to include app name as prefix to avoid name clash.
     :type (or null string))
    (left
     :initarg :left
-    :accessor uikit--raw-left-of
+    :accessor uikit-raw-left-of
     :initform nil
     :documentation "The left of view. Can be positive integer of (lambda (view)).")
    (right
     :initarg :right
-    :accessor uikit--raw-right-of
+    :accessor uikit-raw-right-of
     :initform nil
     :documentation "The right of view. Can be positive integer of (lambda (view)).")
    (top
     :initarg :top
-    :accessor uikit--raw-top-of
+    :accessor uikit-raw-top-of
     :initform nil
     :documentation "The top of view. Can be positive integer of (lambda (view)).")
    (bottom
     :initarg :bottom
-    :accessor uikit--raw-bottom-of
+    :accessor uikit-raw-bottom-of
     :initform nil
     :documentation "The bottom of view. Can be positive integer of (lambda (view)).")
    (width
     :initarg :width
-    :accessor uikit--raw-width-of
+    :accessor uikit-raw-width-of
     :initform nil
     :documentation "The width of view. Can be positive integer of (lambda (view)).")
    (height
     :initarg :height
-    :accessor uikit--raw-height-of
+    :accessor uikit-raw-height-of
     :initform nil
     :documentation "The height of view. Can be positive integer of (lambda (view)).")
    (left-cache
-    :accessor uikit--left-cache-of
+    :accessor uikit-left-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `left' of the view during drawing process.")
    (right-cache
-    :accessor uikit--right-cache-of
+    :accessor uikit-right-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `right-cache' of the view during drawing process.")
    (top-cache
-    :accessor uikit--top-cache-of
+    :accessor uikit-top-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `top' of the view during drawing process.")
    (bottom-cache
-    :accessor uikit--bottom-cache-of
+    :accessor uikit-bottom-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Cache of `bottom' of the view during drawing process.")
    (width-cache
-    :accessor uikit--width-cache-of
+    :accessor uikit-width-cache-of
     :initform nil
     :type (or null integer)
     :documentation "The `width' cache.")
    (height-cache
-    :accessor uikit--height-cache-of
+    :accessor uikit-height-cache-of
     :initform nil
     :type (or null integer)
     :documentation "The `height' cache.")
    ;; drawing
    (parent-stackview
-    :accessor uikit--parent-stackview-of
+    :accessor uikit-parent-stackview-of
     :initform nil
     :documentation "The parent stackview of this view.
 Used to check if the view is within the stackview on screen."))
@@ -321,8 +321,8 @@ Used to check if the view is within the stackview on screen."))
 (cl-defmethod initialize-instance :after ((view uikit-view) &rest _)
   "Process the :id key. Create a variable `uikit//ID' as an alias of the view (If there is any).
 e.g. uikit//mybutton for id \"mybutton\"."
-  (when (uikit--id-of view)
-    (setf (symbol-value (intern (format "uikit//%s" (uikit--id-of view))))
+  (when (uikit-id-of view)
+    (setf (symbol-value (intern (format "uikit//%s" (uikit-id-of view))))
           view)))
 
 ;;;;; Universal Accessor: Getter & Setter
@@ -362,13 +362,13 @@ because they needs to change left/right/.../ base on their direction."
 
 (defmacro uikit--orientation-h/v (stack h v)
   "Evaluate H if orientation of STACK is `left' or `right', eval V if `top' or `bottom'."
-  `(pcase (uikit--orientation-of ,stack)
+  `(pcase (uikit-orientation-of ,stack)
      ((or 'left 'right) ,h)
      ((or 'top 'bottom) ,v)))
 
 ;; (defmacro uikit--with-orientation (stack left bottom right top)
 ;;   "Evaluate LEFT RIGHT TOP BOTTOM base on the orientation of STACK."
-;;   `(pcase (uikit--orientation-of ,stack)
+;;   `(pcase (uikit-orientation-of ,stack)
 ;;      ('left ,left)
 ;;      ('right ,right)
 ;;      ('top ,top)
@@ -377,9 +377,9 @@ because they needs to change left/right/.../ base on their direction."
 (defmacro uikit--make-special-accessor (constrain form)
   "Define special accessor for CONSTRAIN with FORM.
 FORM is calculation logic. E.g, left = right - width"
-  (let ((raw-xx-of (intern (format "uikit--raw-%s-of" (symbol-name constrain))))
+  (let ((raw-xx-of (intern (format "uikit-raw-%s-of" (symbol-name constrain))))
         ;; (raw-xx (intern (format "raw-%s" (symbol-name constrain))))
-        (xx-cache-of (intern (format "uikit--%s-cache-of" (symbol-name constrain)))))
+        (xx-cache-of (intern (format "uikit-%s-cache-of" (symbol-name constrain)))))
     `(progn
        ;; define a function that `funcall' on the symbol as same as the function itself
        ;; with arguments received
@@ -415,7 +415,7 @@ That might end up in infinite recursion."
                                     (condition-case err
                                         (funcall constrain view)
                                       ((debug error) (message "Error calculating constrain of %s (by calling lambda function), error is: %s"
-                                                              (uikit--id-of view)
+                                                              (uikit-id-of view)
                                                               err))))
                                    ;; User hard coded this constrain, use it
                                    ((pred integerp) constrain)
@@ -439,13 +439,13 @@ That might end up in infinite recursion."
 
 ;; simply return nil if operand(s) is(are) nil
 (uikit--make-special-accessor left (ignore-errors (- (uikit-right-of view nil t) (or (uikit-width-of view nil t) ; user configured width
-                                                                                     (uikit--content-width-of view))))) ; or content width
+                                                                                     (uikit-content-width-of view))))) ; or content width
 (uikit--make-special-accessor right (ignore-errors (+ (uikit-left-of view nil t) (or (uikit-width-of view nil t)
-                                                                                     (uikit--content-width-of view)))))
+                                                                                     (uikit-content-width-of view)))))
 (uikit--make-special-accessor top (ignore-errors (- (uikit-bottom-of view nil t) (or (uikit-height-of view nil t)
-                                                                                     (uikit--content-height-of view)))))
+                                                                                     (uikit-content-height-of view)))))
 (uikit--make-special-accessor bottom (ignore-errors (+ (uikit-top-of view nil t) (or (uikit-height-of view nil t)
-                                                                                     (uikit--content-height-of view)))))
+                                                                                     (uikit-content-height-of view)))))
 ;; ??? how is width and height used?
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
@@ -454,7 +454,7 @@ That might end up in infinite recursion."
 ;;;;; Class
 (uikit-defclass uikit-atom-view (uikit-view)
   ((face
-    :accessor uikit--face-of
+    :accessor uikit-face-of
     :initarg :face
     :initform nil
     :documentation "The face used for this view. Default to nil.
@@ -462,13 +462,13 @@ You can set face by property list but this is more convenient.
 face in property list will override this. "
     :type (or null (satisfies facep)))
    (pad-char
-    :accessor uikit--pad-char-of
+    :accessor uikit-pad-char-of
     :initarg :pad-char
     :initform (eval uikit-pad-char)
     :documentation "The char used to pad extra space."
     :type character)
    (keymap
-    :accessor uikit--keymap-of
+    :accessor uikit-keymap-of
     :initarg :keymap
     :initform nil
     :documentation "Keymap on the view
@@ -477,7 +477,7 @@ You can set keymap in property list but this is more convenient.
 TODO Does keymap in property list override this?"
     :type (or null (satisfies keymapp)))
    (property-list
-    :accessor uikit--property-list-of
+    :accessor uikit-property-list-of
     :initarg :property-list
     :initform nil
     :documentation "Extra text properties that you want to put to view text.
@@ -488,7 +488,7 @@ each element of the list is an cons of PROPERTY and VALUE that are eligibel for 
    ;; content
 
    (content
-    :accessor uikit--content-of
+    :accessor uikit-content-of
     :initform ()
     :documentation "The actual text that is drew to canvas, cached for later use.
 But it doesn't include the padding spaces around, since size might
@@ -496,7 +496,7 @@ change more frequent that the content. See `padded-content'.
 It is a list of strings, each string is a line.")
    ;; ??? keep it or not?
    (content-changed
-    :accessor uikit--content-changed-of
+    :accessor uikit-content-changed-of
     :initform t
     :documentation "If this is t, then content needs to be recalculated.
 Every time a change that alters the visual appearance of the view is made,
@@ -514,7 +514,7 @@ his class is an abstract class.")
   "Make content from data, returna a list of strings, each string is a line.
 Each line must have same length and should not contain any return char."
   ;; simply return the content
-  (uikit--content-of view))
+  (uikit-content-of view))
 
 (cl-defmethod uikit-make-content :around ((view uikit-atom-view))
   "Make content if `content-changed' is t.
@@ -522,12 +522,12 @@ This function returns the content just for usability.
 It's main job is to (potentially) update the content of VIEW.
 It also sets `content-changed', `width', `height', `content' slots.
 So the specific `uikit-make-content' of each view class has to return their content."
-  (if (uikit--content-changed-of view)
+  (if (uikit-content-changed-of view)
       (let ((content (cl-call-next-method view)))
-        (setf (uikit--content-changed-of view) nil
-              (uikit--content-of view) content)) ; last val will be returned
+        (setf (uikit-content-changed-of view) nil
+              (uikit-content-of view) content)) ; last val will be returned
     ;; content not changed, just return it
-    (uikit--content-of view)))
+    (uikit-content-of view)))
 
 ;; Update content has to be separated from drawing (more specifically, before that)
 ;; because EVERY view has to have their content ready before
@@ -545,16 +545,16 @@ and then call `uikit-raw-draw'."
   ;; normally parent stackview handles this (make content),
   ;; but if the view doesn't have a parent stackview
   ;; it got to do it itself
-  (unless (uikit--parent-stackview-of view)
+  (unless (uikit-parent-stackview-of view)
     (uikit-make-content view))
-  (let ((content (uikit--content-of view))
+  (let ((content (uikit-content-of view))
         (all-property (append `(uikit-view ,(gv-ref view)
-                                           face ,(uikit--face-of view)
-                                           keymap ,(uikit--keymap-of view))
-                              (uikit--property-list-of view)))
+                                           face ,(uikit-face-of view)
+                                           keymap ,(uikit-keymap-of view))
+                              (uikit-property-list-of view)))
         (inhibit-modification-hooks t)
-        (width (or (uikit-width-of view) (uikit--content-width-of view)))
-        (height (or (uikit-height-of view) (uikit--content-height-of view)))
+        (width (or (uikit-width-of view) (uikit-content-width-of view)))
+        (height (or (uikit-height-of view) (uikit-content-height-of view)))
         line
         (uikit--drawing t)
         (inhibit-modification-hooks t)
@@ -573,11 +573,11 @@ and then call `uikit-raw-draw'."
     (uikit-raw-draw (cl-subseq content 0 height)
                     (or x (uikit--error-nil (uikit-left-of view)
                                             "Warning: %s(%s)'s left is nil"
-                                            (uikit-buttonize (uikit--id-of view) (lambda () (interactive) (print (object-print view))))
+                                            (uikit-buttonize (uikit-id-of view) (lambda () (interactive) (print (object-print view))))
                                             (eieio-object-class-name view)))
                     (or y (uikit--error-nil (uikit-top-of view)
                                             "Warning: %s(%s)'s top is nil"
-                                            (uikit-buttonize (uikit--id-of view) (lambda () (interactive) (print (object-print view))))
+                                            (uikit-buttonize (uikit-id-of view) (lambda () (interactive) (print (object-print view))))
                                             (eieio-object-class-name view))))))
 
 (defun uikit-buttonize (str func &optional return-func mouse-2-func mouse-3-func)
@@ -592,30 +592,30 @@ By default RETURN-FUNC used FUNC when RETURN-FUNC is nil."
                             map)
               'face 'uikit-button-face))
 
-(cl-defmethod uikit--content-width-of ((view uikit-atom-view))
+(cl-defmethod uikit-content-width-of ((view uikit-atom-view))
   "Return the content width of VIEW. Only look at first line of content."
   ;; TOTEST
-  (length (car (uikit--content-of view))))
+  (length (car (uikit-content-of view))))
 
-(cl-defmethod uikit--content-height-of ((view uikit-atom-view))
+(cl-defmethod uikit-content-height-of ((view uikit-atom-view))
   "Return the content height of VIEW."
   ;; TOTEST
-  (length (uikit--content-of view)))
+  (length (uikit-content-of view)))
 
 (cl-defmethod uikit-content-changed ((view uikit-atom-view))
   "Let UIKit know VIEW's content is changed."
-  (setf (uikit--content-changed-of view) t))
+  (setf (uikit-content-changed-of view) t))
 
 ;;;; Stackview
 ;;;;; Class
 (uikit-defclass uikit-stackview (uikit-view)
   ((subview-list
-    :accessor uikit--subview-list-of
+    :accessor uikit-subview-list-of
     :initarg :subview-list
     :initform nil
     :documentation "List of subviews of the stack view.")
    (autolayout
-    :accessor uikit--autolayout-of
+    :accessor uikit-autolayout-of
     :initarg :autolayout
     :initform nil
     :documentation "Determins how does stackview \"stack\" subviews together.
@@ -623,31 +623,31 @@ It can be nil, 'stacking, 'equal-spacing, 'portion."
     :type symbol)
    (stacking-space
     :initarg :stacking-space
-    :accessor uikit--stacking-space-of
+    :accessor uikit-stacking-space-of
     :initform 0
     :type integer
     :documentation "The space between subviews when using 'stacking autolayout.")
    (equal-spacing-space-cache
-    :accessor uikit--equal-spacing-space-cache-of
+    :accessor uikit-equal-spacing-space-cache-of
     :initform nil
     :type (or null integer)
     :documentation "Spacing between subviews when using 'equal-spacing auatolayout.")
    (v-align
-    :accessor uikit--v-align-of
+    :accessor uikit-v-align-of
     :initarg :v-align
     :initform 'top
     :type symbol
     :documentation "Vertical alignment of subviews. Can be 'top, 'center, 'bottom.
 Only take effect when `autolayout' is non-nil.")
    (orientation
-    :accessor uikit--orientation-of
+    :accessor uikit-orientation-of
     :initarg :orientation
     :initform 'left
     :type symbol
     :documentation "The orientation of the stackview. 'left (default) means normal orientation.
 'top means rotate clockwise: top becomes left, left becomes bottom, etc.")
    (max-subview-height-cache
-    :accessor uikit--max-subview-height-cache-of
+    :accessor uikit-max-subview-height-cache-of
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
@@ -657,49 +657,49 @@ Only take effect when `autolayout' is non-nil.")
 ;; special accessor
 (defun uikit-max-subview-height-of (stack)
   "Return the largest height of the subviews of stackview STACK."
-  (or (uikit--max-subview-height-cache-of stack)
-      (setf (uikit--max-subview-height-cache-of stack)
+  (or (uikit-max-subview-height-cache-of stack)
+      (setf (uikit-max-subview-height-cache-of stack)
             (apply 'max
                    (or (mapcar (uikit--orientation-h/v stack
-                                                       'uikit--content-height-of
-                                                       'uikit--content-width-of)
-                               (uikit--subview-list-of stack))
+                                                       'uikit-content-height-of
+                                                       'uikit-content-width-of)
+                               (uikit-subview-list-of stack))
                        '(0))))))
 
 
 (defun uikit-equal-spacing-space-of (stackview)
   "Return the space between subviews of STACKVIEW."
-  (or (uikit--equal-spacing-space-cache-of stackview)
+  (or (uikit-equal-spacing-space-cache-of stackview)
       (condition-case nil
-          (let ((subview-list (uikit--subview-list-of stackview)))
+          (let ((subview-list (uikit-subview-list-of stackview)))
             ;; (stackview width - sum of subviews' width ) / (subview number - 1)
             (floor (/ (let ((result (- (uikit-width-of stackview)
                                        ;; TODO replace with `uikit-content-width-of'
-                                       (cl-reduce '+ (mapcar (lambda (view) (uikit--content-width-of view)) subview-list)))))
+                                       (cl-reduce '+ (mapcar (lambda (view) (uikit-content-width-of view)) subview-list)))))
                         ;; TODO replace with `uikit--ensure>=0'
                         (if (< result 0)
                             0
                           result))
                       (1- (length subview-list)))))
         ((debug error) (message "Not enough constrain for %s. Cannot calculate equal-spacing-space constrain of it"
-                                (uikit--id-of stackview))))))
+                                (uikit-id-of stackview))))))
 
 (cl-defmethod uikit-make-content ((stackview uikit-stackview))
   "STACKVIEW make content by asking its subviews to make content."
   ;; TOTEST
-  (dolist (subview (uikit--subview-list-of stackview))
+  (dolist (subview (uikit-subview-list-of stackview))
     (uikit-make-content subview)))
 
 (cl-defmethod uikit-quit ((stackview uikit-stackview))
   "Quit stackview and set all subviews to nil."
   ;; TODO not finished
-  (dolist (subview (uikit--subview-list-of stackview))
+  (dolist (subview (uikit-subview-list-of stackview))
     (uikit-quit subview))
   (setf stackview nil))
 
 (cl-defmethod uikit-draw ((stack uikit-stackview))
   "Draw the stackview."
-  (dolist (subview (uikit--subview-list-of stack))
+  (dolist (subview (uikit-subview-list-of stack))
     (uikit-make-content subview))
   ;; Update content has to be separated from drawing (more specifically, before that)
   ;; because EVERY view has to have their content ready before
@@ -708,47 +708,47 @@ Only take effect when `autolayout' is non-nil.")
   ;; its left depends on the last view's right and the equal spacing;
   ;; equal spacing is depended to ALL subview's width and stackview's length
   ;; If any view doesn't have its content ready, equal spacing would return wrong number
-  (dolist (subview (uikit--subview-list-of stack))
+  (dolist (subview (uikit-subview-list-of stack))
     (uikit-draw subview)))
 
-(cl-defmethod uikit--content-width-of ((stack uikit-stackview))
+(cl-defmethod uikit-content-width-of ((stack uikit-stackview))
   "Return the literal content width of STACK from left to right on screen.
 Doesn't change base on orientation."
   (uikit--orientation-h/v stack
-                          (+ (cl-reduce '+ (mapcar 'uikit--content-width-of (uikit--subview-list-of stack)))
-                             (if (equal (uikit--autolayout-of stack) 'stacking)
-                                 (* (1- (length (uikit--subview-list-of stack)))
-                                    (uikit--ensure>=0 (uikit--stacking-space-of stack)))
+                          (+ (cl-reduce '+ (mapcar 'uikit-content-width-of (uikit-subview-list-of stack)))
+                             (if (equal (uikit-autolayout-of stack) 'stacking)
+                                 (* (1- (length (uikit-subview-list-of stack)))
+                                    (uikit--ensure>=0 (uikit-stacking-space-of stack)))
                                0))
                           (uikit-max-subview-height-of stack)))
 
-(cl-defmethod uikit--content-height-of ((stack uikit-stackview))
+(cl-defmethod uikit-content-height-of ((stack uikit-stackview))
   "Return the literal content height of STACK from top to bottom on screen.
 Doesn't change base on orientation."
   (uikit--orientation-h/v stack
                           (uikit-max-subview-height-of stack)
-                          (+ (cl-reduce '+ (mapcar 'uikit--content-height-of (uikit--subview-list-of stack)))
-                             (if (equal (uikit--autolayout-of stack) 'stacking)
-                                 (* (1- (length (uikit--subview-list-of stack)))
-                                    (uikit--ensure>=0 (uikit--stacking-space-of stack)))
+                          (+ (cl-reduce '+ (mapcar 'uikit-content-height-of (uikit-subview-list-of stack)))
+                             (if (equal (uikit-autolayout-of stack) 'stacking)
+                                 (* (1- (length (uikit-subview-list-of stack)))
+                                    (uikit--ensure>=0 (uikit-stacking-space-of stack)))
                                0))))
 
 (defun uikit--clear-drawing-cache (view)
   "Clear the cached constrains of VIEW and its (possibly) subviews."
   (when (cl-typep view 'uikit-stackview)
-    (mapc 'uikit--clear-drawing-cache (uikit--subview-list-of view))
-    (setf (uikit--equal-spacing-space-cache-of view) nil
-          (uikit--max-subview-height-cache-of view) nil))
-  (setf (uikit--left-cache-of view) nil
-        (uikit--right-cache-of view) nil
-        (uikit--top-cache-of view) nil
-        (uikit--bottom-cache-of view) nil
-        (uikit--width-cache-of view) nil
-        (uikit--height-cache-of view) nil))
+    (mapc 'uikit--clear-drawing-cache (uikit-subview-list-of view))
+    (setf (uikit-equal-spacing-space-cache-of view) nil
+          (uikit-max-subview-height-cache-of view) nil))
+  (setf (uikit-left-cache-of view) nil
+        (uikit-right-cache-of view) nil
+        (uikit-top-cache-of view) nil
+        (uikit-bottom-cache-of view) nil
+        (uikit-width-cache-of view) nil
+        (uikit-height-cache-of view) nil))
 
 (cl-defmethod uikit-content-changed ((stack uikit-stackview))
   "Mark every subview of STACK as content changed."
-  (mapc #'uikit-content-changed (uikit--subview-list-of stack)))
+  (mapc #'uikit-content-changed (uikit-subview-list-of stack)))
 
 
 
@@ -757,40 +757,40 @@ Doesn't change base on orientation."
 (defun uikit-subview-append (stackview &rest view-list)
   "Append views in VIEW-LIST to STACKVIEW's `subview-list'."
   ;; TOTEST
-  (setf (uikit--subview-list-of stackview )
-        (append (uikit--subview-list-of stackview)
+  (setf (uikit-subview-list-of stackview )
+        (append (uikit-subview-list-of stackview)
                 view-list)))
 
 (defun uikit-subview-push (stackview &rest view-list)
   "Push views in VIEW-LIST to STACKVIEW's `subview-list'."
   ;; TOTEST
-  (setf (uikit--subview-list-of stackview )
+  (setf (uikit-subview-list-of stackview )
         (append (reverse view-list)
-                (uikit--subview-list-of stackview))))
+                (uikit-subview-list-of stackview))))
 
 (defun uikit-subview-delete (stackview &rest view-list)
   "Remove every view in VIEW-LIST from STACKVIEW."
   ;; TOTEST
   ;; TODO optimize?
-  (mapc (lambda (view) (delete view (uikit--subview-list-of stackview))) view-list))
+  (mapc (lambda (view) (delete view (uikit-subview-list-of stackview))) view-list))
 
 (defun uikit-subview-drop (stackview &optional index)
   "Drop subview at INDEX of STACKVIEW.
 If INDEX is nil, drop the last one."
   ;; TOTEST
-  (-remove-at (or index (1- (length (uikit--subview-list-of stackview))))
-              (uikit--subview-list-of stackview)))
+  (-remove-at (or index (1- (length (uikit-subview-list-of stackview))))
+              (uikit-subview-list-of stackview)))
 
 (defmacro uikit-dosubview (var stackview &rest body)
   "Bind VAR to each subviews of STACKVIEW.
 And evaluate BODY for each."
   (declare (indent 2))
-  `(dolist (,var (uikit--subview-list-of stackview))
+  `(dolist (,var (uikit-subview-list-of stackview))
      ,@body))
 
 (defmacro uikit-mapc-subview (func stackview)
   "Call `mapc' with FUNC and subview list of STACKVIEW."
-  `(mapc #',func (uikit--subview-list-of stackview)))
+  `(mapc #',func (uikit-subview-list-of stackview)))
 
 ;;;; Auto Layout
 
@@ -817,7 +817,7 @@ orientation can be 'left/bottom/right/top.
 'right:                        180 degree;
 'top:                          270 degree."
   (declare (indent defun))
-  `(let ((orientation (pcase (uikit--orientation-of stackview)
+  `(let ((orientation (pcase (uikit-orientation-of stackview)
                         ('left 0)
                         ('bottom 1)
                         ('right 2)
@@ -835,26 +835,26 @@ orientation can be 'left/bottom/right/top.
   (uikit--with-orientation stackview
     (let* ((uikit--drawing nil) ; this should default to nil, but just to make sure
            (left (lambda (view) (uikit-left-of stackview)))
-           (space-func (pcase (uikit--autolayout-of stackview) ; function that returns the space length between subviews
-                         ('stacking (lambda () (uikit--stacking-space-of stackview)))
+           (space-func (pcase (uikit-autolayout-of stackview) ; function that returns the space length between subviews
+                         ('stacking (lambda () (uikit-stacking-space-of stackview)))
                          ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))
-                         (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit--id-of stackview)))))
-           (top-func (pcase (uikit--v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
-                       ('top (lambda (view) (uikit-top-of (uikit--parent-stackview-of view))))
+                         (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit-id-of stackview)))))
+           (top-func (pcase (uikit-v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
+                       ('top (lambda (view) (uikit-top-of (uikit-parent-stackview-of view))))
                        ('center (lambda (view)
-                                  (+ (uikit-top-of (uikit--parent-stackview-of view))
-                                     (/ (- (uikit-max-subview-height-of (uikit--parent-stackview-of view))
-                                           (uikit--content-height-of view)) 2))))
+                                  (+ (uikit-top-of (uikit-parent-stackview-of view))
+                                     (/ (- (uikit-max-subview-height-of (uikit-parent-stackview-of view))
+                                           (uikit-content-height-of view)) 2))))
                        ;; FIXME
                        ('bottom (lambda (view)
-                                  (- (uikit-bottom-of (uikit--parent-stackview-of view))
-                                     (uikit--content-height-of view)))))))
-      (dolist (subview (uikit--subview-list-of stackview))
+                                  (- (uikit-bottom-of (uikit-parent-stackview-of view))
+                                     (uikit-content-height-of view)))))))
+      (dolist (subview (uikit-subview-list-of stackview))
         ;; autolayout yourself if you are a stackview
         (when (cl-typep subview 'uikit-stackview)
           (uikit-autolayout subview))
         ;; set your parent
-        (setf (uikit--parent-stackview-of subview) stackview)
+        (setf (uikit-parent-stackview-of subview) stackview)
         ;; set your left to the left value pre-calculated by last subview for you
         ;; you just shut up and use it
         (uikit-left-of subview left)
@@ -863,11 +863,11 @@ orientation can be 'left/bottom/right/top.
                      (let ((right (uikit--error-nil
                                    (uikit-right-of subview)
                                    "last subview's right is nil when calculating left for %s"
-                                   (uikit--id-of view)))
+                                   (uikit-id-of view)))
                            (space (uikit--error-nil
                                    (funcall space-func)
                                    "space from stackview top is nil when calculating left for %s"
-                                   (uikit--id-of view))))
+                                   (uikit-id-of view))))
                        (+ right space))))
         ;; top & bottom
         (uikit-top-of subview top-func)))))
@@ -878,17 +878,17 @@ orientation can be 'left/bottom/right/top.
   ((name
     :initarg :name
     :initform "*UIKit Abstract Scene*"
-    :accessor uikit--name-of
+    :accessor uikit-name-of
     :documentation "The name of this scene."
     :type string)
    (buffer
     :initform nil
-    :accessor uikit--buffer-of
+    :accessor uikit-buffer-of
     :documentation "The buffer in where the scene is displayed."
     :type (or null buffer))
    (constrain-list
     :initform nil
-    :accessor uikit--constrain-list-of
+    :accessor uikit-constrain-list-of
     :documentation "All of the constrains of the subiews of this scene."))
   ;; abstract
   "A scene is like a web page."
@@ -896,8 +896,8 @@ orientation can be 'left/bottom/right/top.
 
 (cl-defmethod make-instance :after ((scene uikit-scene) &key)
   "Create buffer for scene."
-  (setf (uikit--buffer-of scene)
-        (let ((buffer (get-buffer-create (uikit--name-of scene))))
+  (setf (uikit-buffer-of scene)
+        (let ((buffer (get-buffer-create (uikit-name-of scene))))
           (with-current-buffer buffer
             (setq uikit-buffer-scene scene))
           buffer)))
@@ -914,22 +914,22 @@ orientation can be 'left/bottom/right/top.
   ((name
     :initarg :name
     :initform "An App"
-    :accessor uikit--name-of
+    :accessor uikit-name-of
     :documentation "The name of the app."
     :type string)
    (scene-ring
     :initform nil
-    :accessor uikit--scene-ring-of
+    :accessor uikit-scene-ring-of
     :documentation "The ring of scenes.")
    (current-scene
     :initform nil
-    :accessor uikit--current-scene-of
+    :accessor uikit-current-scene-of
     :documentation "The current scene of the app."
     :type (or null uikit-scene))
    (entry-scene
     :initarg entry-scene
     :initform nil
-    :accessor uikit--entry-scene-of
+    :accessor uikit-entry-scene-of
     :documentation "A subclass of `uikit-scene'."))
   "An app is made of a set of related scenes. Subclass it."
   :abstract t)
@@ -946,7 +946,7 @@ Creates a buffer and segue to the entry scene."
 (uikit-defclass uikit-label (uikit-atom-view)
   ((text
     :initarg :text
-    :accessor uikit--text-of
+    :accessor uikit-text-of
     :initform "Text"
     :documentation "The text of label."
     :type string))
@@ -955,7 +955,7 @@ Creates a buffer and segue to the entry scene."
 (cl-defmethod uikit-make-content ((label uikit-label))
   "Return content of LABEL."
   ;; TOTEST
-  (split-string (uikit--text-of label) "\n"))
+  (split-string (uikit-text-of label) "\n"))
 
 ;;;; Clickable
 
@@ -963,31 +963,31 @@ Creates a buffer and segue to the entry scene."
   ((mouse-1-func
     :initarg :mouse-1-func
     :initform 'uikit-button-clicked
-    :accessor uikit--mouse-1-func-of
+    :accessor uikit-mouse-1-func-of
     :documentation "The function invoked when mouse-1 clicked on the button.
 It can be either a symbol or a lambda.")
    (mouse-2-func
     :initarg :mouse-2-func
     :initform 'uikit-button-clicked
-    :accessor uikit--mouse-2-func-of
+    :accessor uikit-mouse-2-func-of
     :documentation "The function invoked when mouse-2 clicked on the button.
 It can be either a symbol or a lambda.")
    (mouse-3-func
     :initarg :mouse-3-func
     :initform 'uikit-button-clicked
-    :accessor uikit--mouse-3-func-of
+    :accessor uikit-mouse-3-func-of
     :documentation "The function invoked when mouse-3 clicked on the button.
 It can be either a symbol or a lambda.")
    (return-func
     :initarg :return-func
     :initform 'uikit-button-clicked
-    :accessor uikit--return-func-of
+    :accessor uikit-return-func-of
     :documentation "The function invoked when RET clicked on the button.
 It can be either a symbol or a lambda.")
    (help
     :initarg :help
     :initform "Click"
-    :accessor uikit--help-of
+    :accessor uikit-help-of
     :documentation "This is displayed when mouse is on button."
     :type string))
   "A clickable item."
@@ -996,17 +996,17 @@ It can be either a symbol or a lambda.")
 (cl-defmethod initialize-instance :after ((button uikit-clickable) &rest _)
   "Add help to properties."
   ;; TOTEST
-  (setf (uikit--keymap-of button) (let ((map (make-sparse-keymap)))
-                                    (define-key map (kbd "<mouse-1>") (uikit--mouse-1-func-of button))
-                                    (define-key map (kbd "<mouse-2>") (uikit--mouse-2-func-of button))
-                                    (define-key map (kbd "<mouse-3>") (uikit--mouse-3-func-of button))
-                                    (define-key map (kbd "<return>") (uikit--return-func-of button))
+  (setf (uikit-keymap-of button) (let ((map (make-sparse-keymap)))
+                                    (define-key map (kbd "<mouse-1>") (uikit-mouse-1-func-of button))
+                                    (define-key map (kbd "<mouse-2>") (uikit-mouse-2-func-of button))
+                                    (define-key map (kbd "<mouse-3>") (uikit-mouse-3-func-of button))
+                                    (define-key map (kbd "<return>") (uikit-return-func-of button))
                                     map)))
 ;;;; Editable
 (uikit-defclass uikit-editable ()
   ((edit-mode
     :initform nil
-    :accessor uikit--edit-mode-of
+    :accessor uikit-edit-mode-of
     :type boolean
     :documentation "Whether the table is in delete mode.
 In this mode cells are appended with a DELETE button,
@@ -1014,7 +1014,7 @@ and the table is appended with a ADD button to add new cell.")
    (edit-mode-hook
     :initargg :edit-mode-hook
     :initform nil
-    :accessor uikit--edit-mode-hook-of
+    :accessor uikit-edit-mode-hook-of
     :documentation "The hook that runs when toggling edit mode.
 The hook should take the view as argument."))
   "A view that have edit-mode."
@@ -1023,7 +1023,7 @@ The hook should take the view as argument."))
 (cl-defmethod uikit-edit-mode :around ((view uikit-editable)) &optional onoff
   "Run `edit-mode-hook'."
   (cl-call-next-method view onoff)
-  (run-hook-with-args (uikit--edit-mode-hook-of view) view))
+  (run-hook-with-args (uikit-edit-mode-hook-of view) view))
 
 ;;;; Button
 
@@ -1045,9 +1045,9 @@ The hook should take the view as argument."))
 (cl-defmethod initialize-instance :after ((button uikit-clickable) &rest _)
   "Add help to properties."
   ;; TOTEST
-  (setf (uikit--face-of button) 'uikit-button-face)
-  (setf (uikit--property-list-of button)
-        (append `(help-echo ,(uikit--help-of button) mouse-face uikit-button-mouse-face) (uikit--property-list-of button))))
+  (setf (uikit-face-of button) 'uikit-button-face)
+  (setf (uikit-property-list-of button)
+        (append `(help-echo ,(uikit-help-of button) mouse-face uikit-button-mouse-face) (uikit-property-list-of button))))
 
 
 (defun uikit-button-clicked ()
@@ -1064,80 +1064,80 @@ The hook should take the view as argument."))
    (before-add-cell-hook
     :initarg :before-add-cell-hook
     :initform nil
-    :accessor uikit--before-add-cell-hook-of
+    :accessor uikit-before-add-cell-hook-of
     :documentation "Hooks run before table adds a cell. Each hook is called by arglist: (table cell).")
    (after-add-cell-hook
     :initarg :after-add-cell-hook
     :initform nil
-    :accessor uikit--after-add-cell-hook-of
+    :accessor uikit-after-add-cell-hook-of
     :documentation "Hooks run after table adds a cell. Each hook is called by arglist: (table cell).")
    (before-delete-cell-hook
     :initarg :before-delete-cell-hook
     :initform nil
-    :accessor uikit--before-delete-cell-hook-of
+    :accessor uikit-before-delete-cell-hook-of
     :documentation "Hooks run before table deletes a cell. Each hook is called by arglist: (table cell).")
    (after-delete-cell-hook
     :initarg :after-delete-cell-hook
     :initform nil
-    :accessor uikit--after-delete-cell-hook-of
+    :accessor uikit-after-delete-cell-hook-of
     :documentation "Hooks run after table deletes a cell. Each hook is called by arglist: (table cell).")
    (mouse-over-face
     :initarg :mouse-over-face
     :initform nil
-    :accessor uikit--mouse-over-face-of
+    :accessor uikit-mouse-over-face-of
     :documentation "The face used when mouse is over a cell.")
    (new-cell-func
     :initarg :new-cell-func
     :initform (lambda (table) (uikit-add-cell table (uikit-plain-cell :title "A Cell") ))
-    :accessor uikit--new-cell-func-of
+    :accessor uikit-new-cell-func-of
     :documentation "The function that takes the table as argument
 and return a cell (to be added to table).")
    (header
     :initarg :header
     :initform nil
-    :accessor uikit--header-of
+    :accessor uikit-header-of
     :documentation "The header of table, a cell.")
    (footer
     :initarg :footer
     :initform nil
-    :accessor uikit--footer-of
+    :accessor uikit-footer-of
     :documentation "The footer of table, a cell.")
    (title
     :initarg :title
     :initform nil
-    :accessor uikit--title-of
+    :accessor uikit-title-of
     :documentation "The tile of table. It is displayed in header if non-nil.")
    (footnote
     :initarg :footnote
     :initform nil
-    :accessor uikit--footnote-of
+    :accessor uikit-footnote-of
     :documentation "The footnote of table. It is displayed in footer if non-nil."))
   "A table.")
 
 (cl-defmethod initialize-instance :after ((table uikit-table) &rest _)
   "Set title and footnote if there is any."
-  (let ((title (uikit--title-of table))
-        (footnote (uikit--footnote-of table)))
-    (when title (setf (uikit--header-of table)
+  (let ((title (uikit-title-of table))
+        (footnote (uikit-footnote-of table)))
+    (when title (setf (uikit-header-of table)
                       (uikit-plain-cell
                        :title title)))
-    (when footnote (setf (uikit--footer-of table)
+    (when footnote (setf (uikit-footer-of table)
                          (uikit-plain-cell
                           :title footnote)))))
 
 (cl-defmethod uikit-change-title ((table uikit-table) title)
   "Change TABLE's title to TITLE."
-  (setf (uikit--title-of table) title)
-  (uikit-change-title (uikit--header-of table) title))
+  (setf (uikit-title-of table) title)
+  (uikit-change-title (uikit-header-of table) title))
 
 (cl-defmethod uikit-change-footnote ((table uikit-table) footnote)
   "Change TABLE's footnote to FOOTNOTE."
-  (setf (uikit--footnote-of table) footnote)
-  (uikit-change-title (uikit--footer-of table) footnote))
+  (setf (uikit-footnote-of table) footnote)
+  (uikit-change-title (uikit-footer-of table) footnote))
 
-(cl-defmethod uikit--subview-list-of :around ((table uikit-table))
+(cl-defmethod uikit-subview-list-of :around ((table uikit-table))
   "Return the subview list of TABLE."
-  (remove nil (append (list (uikit--header-of table)) (cl-call-next-method table) (list (uikit--footer-of table)))))
+  (remove nil (append (list (uikit-header-of table)) (cl-call-next-method table) (list (uikit-footer-of table)))))
 
 
 ;;;;;; Editable Table
@@ -1145,19 +1145,19 @@ and return a cell (to be added to table).")
   ((add-button-cell
     :initarg :add-button-cell
     :initform nil ;; set at init
-    :accessor uikit--add-button-cell-of
+    :accessor uikit-add-button-cell-of
     :documentation "The cell with a button that can add a new cell to
 the table in edit mode."))
   "Table with edit-mode - add/delete buttons are added to table temperately.")
 
 (cl-defmethod :after initialize-instance ((table uikit-editable-table) &rest _)
   "Set add button cell and header edit button for TABLE."
-  (uikit-subview-append (uikit--header-of table)
+  (uikit-subview-append (uikit-header-of table)
                         (uikit-button :text "EDIT"
                                       :mouse-1-func
                                       (lambda () (interactive)
                                         (uikit-edit-mode table))))
-  (setf (uikit--add-button-cell-of table)
+  (setf (uikit-add-button-cell-of table)
         (make-instance
          'uikit-table-cell
          :subview-list
@@ -1166,7 +1166,7 @@ the table in edit mode."))
              :text " + "
              :mouse-1-func (lambda () (interactive)
                              (uikit-add-cell table
-                                             (funcall (uikit--new-cell-func-of table) table))))))))
+                                             (funcall (uikit-new-cell-func-of table) table))))))))
 
 ;;;;;; Table Cell
 (uikit-defclass uikit-table-cell (uikit-stackview)
@@ -1175,13 +1175,13 @@ the table in edit mode."))
    (delete-button
     :initarg :delete-button
     :initform nil ; but this will be set in init so it's not really nil
-    :accessor uikit--delete-button-of
+    :accessor uikit-delete-button-of
     :documentation "The delete button of cell."))
   "A cell of a table.")
 
 (cl-defmethod initialize-instance :after ((cell uikit-table-cell) &rest _)
   "Set delete-button for CELL."
-  (setf (uikit--delete-button-of cell)
+  (setf (uikit-delete-button-of cell)
         (make-instance 'uikit-button :text " X " :mouse-1-func (lambda () (interactive) (uikit-delete-cell cell)))))
 
 ;;;;;; Plain Cell
@@ -1189,24 +1189,24 @@ the table in edit mode."))
   ((title
     :initarg :title
     :initform "A Table"
-    :accessor uikit--title-of
+    :accessor uikit-title-of
     :type string
     :documentation "The title of the cell.")
    (title-view
     :initform nil
-    :accessor uikit--title-view-of
+    :accessor uikit-title-view-of
     :documentation "The label view displayed by cell.")))
 
 (cl-defmethod initialize-instance :after ((cell uikit-plain-cell) &rest _)
   "Create cell contents."
-  (uikit-subview-append cell (setf (uikit--title-view-of cell)
-                                   (uikit-label :text (uikit--title-of cell)))))
+  (uikit-subview-append cell (setf (uikit-title-view-of cell)
+                                   (uikit-label :text (uikit-title-of cell)))))
 
 (cl-defmethod uikit-change-title ((cell uikit-plain-cell) title)
   "Change CELL's title to TITLE."
-  (setf (uikit--title-of cell)
+  (setf (uikit-title-of cell)
         title
-        (uikit--text-of (uikit--title-view-of cell))
+        (uikit-text-of (uikit-title-view-of cell))
         title))
 
 ;;;;; Methods
@@ -1214,7 +1214,7 @@ the table in edit mode."))
 (cl-defmethod uikit-add-cell ((cell uikit-table-cell) &optional index)
   "Add CELL to its table at INDEX.
 INDEX nil means append."
-  (uikit-add-cell (uikit--parent-stackview-of cell) cell index))
+  (uikit-add-cell (uikit-parent-stackview-of cell) cell index))
 
 (cl-defmethod uikit-add-cell ((table uikit-table) (cell uikit-table-cell) &optional index)
   "Add CELL to TABLE at INDEX.
@@ -1223,23 +1223,23 @@ INDEX nil means append."
   ;; DASH
   ;; TODO optimize
   ;; TODO handle index error
-  (run-hook-with-args (uikit--before-add-cell-hook-of table) table cell)
-  (setf (uikit--subview-list-of table)
-        (-insert-at (or index (length (uikit--subview-list-of table)))
-                    cell (uikit--subview-list-of table)))
-  (run-hook-with-args (uikit--after-add-cell-hook-of table) table cell))
+  (run-hook-with-args (uikit-before-add-cell-hook-of table) table cell)
+  (setf (uikit-subview-list-of table)
+        (-insert-at (or index (length (uikit-subview-list-of table)))
+                    cell (uikit-subview-list-of table)))
+  (run-hook-with-args (uikit-after-add-cell-hook-of table) table cell))
 
 (cl-defmethod uikit-delete-cell ((cell uikit-table-cell))
   "Delete CELL from it table."
   ;; TOTEST
-  (uikit-delete-cell (uikit--parent-stackview-of cell) cell))
+  (uikit-delete-cell (uikit-parent-stackview-of cell) cell))
 
 (cl-defmethod uikit-delete-cell ((table uikit-table) (cell uikit-table-cell))
   "Delete CELL from TABLE."
   ;; TOTEST
-  (run-hook-with-args (uikit--before-delete-cell-hook-of table) table cell)
-  (delete cell (uikit--subview-list-of table))
-  (run-hook-with-args (uikit--after-delete-cell-hook-of table) table cell))
+  (run-hook-with-args (uikit-before-delete-cell-hook-of table) table cell)
+  (delete cell (uikit-subview-list-of table))
+  (run-hook-with-args (uikit-after-delete-cell-hook-of table) table cell))
 
 ;;;;;; Edit Mode
 (defun uikit-toggle-edit-mode ()
@@ -1253,20 +1253,20 @@ ONOFF >= 0 is on, ONOFF < 0 is off.
 If ONOFF is nil, toggle on if currently off and vice versa."
   (if (if onoff
           (< onoff 0)
-        (uikit--edit-mode-of table))
+        (uikit-edit-mode-of table))
       ;; turn off
       (progn
-        (setf (uikit--edit-mode-of table) nil)
-        (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit--header-of table))
-                                                      (equal cell (uikit--footer-of table)))
+        (setf (uikit-edit-mode-of table) nil)
+        (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit-header-of table))
+                                                      (equal cell (uikit-footer-of table)))
                                              (uikit-edit-mode cell -1))) table)
-        (uikit-subview-delete table (uikit--add-button-cell-of table)))
+        (uikit-subview-delete table (uikit-add-button-cell-of table)))
     ;; turn on
-    (setf (uikit--edit-mode-of table) t)
-    (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit--header-of table))
-                                                  (equal cell (uikit--footer-of table)))
+    (setf (uikit-edit-mode-of table) t)
+    (uikit-mapc-subview (lambda (cell) (when (not (equal cell (uikit-header-of table))
+                                                  (equal cell (uikit-footer-of table)))
                                          (uikit-edit-mode cell 1))) table)
-    (uikit-subview-append table (uikit--add-button-cell-of) table))
+    (uikit-subview-append table (uikit-add-button-cell-of) table))
   (uikit-content-changed table))
 
 (cl-defmethod uikit-edit-mode ((cell uikit-table-cell) &optional onoff)
@@ -1275,14 +1275,14 @@ If ONOFF >= 0, toggle on, otherwise toggle off.
 If ONOFF is nil, toggle on if currently off and vice versa."
   (if (if onoff
           (< onoff 0)
-        (uikit--edit-mode-of cell))
+        (uikit-edit-mode-of cell))
       ;; turn off: remove delete button
       (progn
-        (setf (uikit--edit-mode-of cell) nil)
-        (uikit-subview-delete cell (uikit--delete-button-of cell)))
+        (setf (uikit-edit-mode-of cell) nil)
+        (uikit-subview-delete cell (uikit-delete-button-of cell)))
     ;; turn on: add delete button
-    (setf (uikit--edit-mode-of cell) t)
-    (uikit-subview-append cell (uikit--delete-button-of cell))))
+    (setf (uikit-edit-mode-of cell) t)
+    (uikit-subview-append cell (uikit-delete-button-of cell))))
 
 
 

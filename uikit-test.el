@@ -50,23 +50,23 @@
     ;; set constrain to lambda
     (uikit-left-of button (lambda (SELF) 10))
     (should (eq (uikit-left-of button) 10))
-    (setf (uikit--left-cache-of button) nil)
+    (setf (uikit-left-cache-of button) nil)
 
     ;; constrain based on parent
-    (setf (uikit--parent-stackview-of button) stack)
-    (uikit-left-of button (lambda (SELF) (uikit-left-of (uikit--parent-stackview-of SELF))))
+    (setf (uikit-parent-stackview-of button) stack)
+    (uikit-left-of button (lambda (SELF) (uikit-left-of (uikit-parent-stackview-of SELF))))
     (uikit-left-of stack 100)
     (should (eq (uikit-left-of button) 100))
     ))
 
 (ert-deftest uikit-content-width-for-stackview ()
-  "Test if `uikit--content-width-of' function works well."
+  "Test if `uikit-content-width-of' function works well."
   (make-instance 'uikit-button :id "mybutton0")
   (make-instance 'uikit-button :id "mybutton1")
   (make-instance 'uikit-stackview :id "mystack")
   (uikit-subview-append uikit//mystack uikit//mybutton0 uikit//mybutton1)
   (uikit-make-content uikit//mystack)
-  (should (eq (uikit--content-width-of uikit//mystack) 12)))
+  (should (eq (uikit-content-width-of uikit//mystack) 12)))
 
 (defun uikit-test-prepare-canvas ()
   "Prepare canvas for test."
@@ -91,8 +91,8 @@
   (make-instance 'uikit-stackview :id "mystack")
   (uikit-left-of uikit//mystack 20)
   (uikit-top-of uikit//mystack 10)
-  (setf (uikit--subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2))
-  (setf (uikit--autolayout-of uikit//mystack) 'stacking)
+  (setf (uikit-subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2))
+  (setf (uikit-autolayout-of uikit//mystack) 'stacking)
   (let ((lexical-binding t))
     (uikit-test-prepare-canvas)
     (uikit-autolayout uikit//mystack)
@@ -104,8 +104,8 @@
   (make-instance 'uikit-stackview :id "mystack")
   (make-instance 'uikit-button :id "mybutton0" :text "BUTTON0")
   (make-instance 'uikit-button :id "mybutton1" :text "BUTTON1")
-  (setf (uikit--orientation-of uikit//mystack) 'top
-        (uikit--autolayout-of uikit//mystack) 'stacking)
+  (setf (uikit-orientation-of uikit//mystack) 'top
+        (uikit-autolayout-of uikit//mystack) 'stacking)
   (uikit-left-of uikit//mystack 20)
   (uikit-top-of uikit//mystack 10)
   (uikit-subview-append uikit//mystack uikit//mybutton0 uikit//mybutton1)
@@ -131,15 +131,15 @@
   "Test autolayout."
   (interactive)
   (make-instance 'uikit-stackview :id "mystack")
-  (setf (uikit--autolayout-of uikit//mystack) 'stacking
-        (uikit--orientation-of uikit//mystack) 'top
-        (uikit--v-align-of uikit//mystack) 'top)
+  (setf (uikit-autolayout-of uikit//mystack) 'stacking
+        (uikit-orientation-of uikit//mystack) 'top
+        (uikit-v-align-of uikit//mystack) 'top)
 
   (dolist (num0 (number-sequence 0 9))
     (uikit-subview-append
      uikit//mystack
      (make-instance 'uikit-stackview :id (format "mystack%d" num0)))
-    (setf (uikit--autolayout-of (symbol-value (intern (format "uikit//mystack%d" num0))))
+    (setf (uikit-autolayout-of (symbol-value (intern (format "uikit//mystack%d" num0))))
           'stacking)
     (dolist (num1 (number-sequence 0 9))
       (uikit-subview-append
@@ -149,7 +149,7 @@
   (uikit-left-of uikit//mystack 20)
   (uikit-top-of uikit//mystack 10)
   ;; (uikit-right-of uikit//mystack 60)
-  ;; (setf (uikit--autolayout-of uikit//mystack) 'equal-spacing)
+  ;; (setf (uikit-autolayout-of uikit//mystack) 'equal-spacing)
   (let ((lexical-binding t)
         ;; (gc-cons-threshold 20000000)
         )
@@ -165,7 +165,7 @@ There should be spacing in the 2nd line."
   (interactive)
   (uikit-test-autolayout-bulk)
   (make-instance 'uikit-label :id "mylabel")
-  (setf (uikit--text-of uikit//mylabel) "##########\n#####\n##########")
+  (setf (uikit-text-of uikit//mylabel) "##########\n#####\n##########")
   (uikit-left-of uikit//mylabel 20)
   (uikit-top-of uikit//mylabel 10)
   (uikit-draw uikit//mylabel))
@@ -180,8 +180,8 @@ There should be spacing in the 2nd line."
   (uikit-left-of uikit//mystack 20)
   (uikit-top-of uikit//mystack 10)
   (uikit-right-of uikit//mystack 60)
-  (setf (uikit--subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2 uikit//mybutton3))
-  (setf (uikit--autolayout-of uikit//mystack) 'equal-spacing)
+  (setf (uikit-subview-list-of uikit//mystack) (list uikit//mybutton1 uikit//mybutton2 uikit//mybutton3))
+  (setf (uikit-autolayout-of uikit//mystack) 'equal-spacing)
   (let ((lexical-binding t))
     (uikit-test-prepare-canvas)
     (uikit-autolayout uikit//mystack)
@@ -199,9 +199,9 @@ There should be spacing in the 2nd line."
   (uikit-subview-append uikit//mystack2 uikit//mybutton)
   (uikit-left-of uikit//mystack0 20)
   (uikit-top-of uikit//mystack0 10)
-  (setf (uikit--autolayout-of uikit//mystack0) 'stacking
-        (uikit--autolayout-of uikit//mystack1) 'stacking
-        (uikit--autolayout-of uikit//mystack2) 'stacking)
+  (setf (uikit-autolayout-of uikit//mystack0) 'stacking
+        (uikit-autolayout-of uikit//mystack1) 'stacking
+        (uikit-autolayout-of uikit//mystack2) 'stacking)
   (uikit-autolayout uikit//mystack0)
   (uikit-test-prepare-canvas)
   (uikit-draw uikit//mystack0))
@@ -212,4 +212,4 @@ There should be spacing in the 2nd line."
   (make-instance 'uikit-table-cell :id "myheader")
   (make-instance 'uikit-table-cell :id "myfooter")
   (make-instance 'uikit-table :id "mytable" :header uikit//myheader :footer uikit//myfooter)
-  (should (equal (uikit--subview-list-of uikit//mytable) (list uikit//myheader uikit//myfooter))))
+  (should (equal (uikit-subview-list-of uikit//mytable) (list uikit//myheader uikit//myfooter))))
