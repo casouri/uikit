@@ -199,9 +199,43 @@ CONTENT is a list of strings. Generally you want to make them have same length."
     var))
 
 ;;; Base Class
+;;;; Helpers
+(defmacro uikit-defclass (classname superclass-list slot-list &rest rest)
+  "A thin wrapper around `defclass'.
+Expands to (defclass CLASSNAME SUPERCLASS-LIST SLOT-LIST REST).
+
+Additionally, it gives you a free initarg, accessor, writer and reader
+in following conventions:
+:initarg :slotname
+:accessor uikit--slotname-of
+:writer uikit--slotname-set
+:reader uikit--slotname-get
+
+Any user defined slot options will override these automatically generated ones."
+  ;; TODO hand written accessor and initarg are not needed
+  ;; in many earlier class definitions anymore,
+  ;; maybe consider removing them
+  (declare (indent 2))
+  `(defclass ,classname ,superclass-list
+     ,(mapcar (lambda (slot-form)
+                (let ((slot-name (symbol-name (car slot-form))))
+                  (append slot-form
+                          ;; slot options appeared earlier
+                          ;; takes precedents
+                          (list :initarg
+                                (intern (format ":%s" slot-name))
+                                :accessor
+                                (intern (format "uikit--%s-of" slot-name))
+                                :reader
+                                (intern (format "uikit--%s-get" slot-name))
+                                :writer
+                                (intern (format "uikit--%s-set" slot-name))))))
+              slot-list)
+     ,@rest))
+
 ;;;; View
 ;;;;; View
-(defclass uikit-view ()
+(uikit-defclass uikit-view ()
   ((id
     :initarg :id
     :initform "anonymous"
@@ -418,7 +452,7 @@ That might end up in infinite recursion."
 
 ;;;; Atom View
 ;;;;; Class
-(defclass uikit-atom-view (uikit-view)
+(uikit-defclass uikit-atom-view (uikit-view)
   ((face
     :accessor uikit--face-of
     :initarg :face
@@ -574,7 +608,7 @@ By default RETURN-FUNC used FUNC when RETURN-FUNC is nil."
 
 ;;;; Stackview
 ;;;;; Class
-(defclass uikit-stackview (uikit-view)
+(uikit-defclass uikit-stackview (uikit-view)
   ((subview-list
     :accessor uikit--subview-list-of
     :initarg :subview-list
@@ -840,7 +874,7 @@ orientation can be 'left/bottom/right/top.
 
 ;;;; Scene
 
-(defclass uikit-scene (uikit-stackview)
+(uikit-defclass uikit-scene (uikit-stackview)
   ((name
     :initarg :name
     :initform "*UIKit Abstract Scene*"
@@ -876,7 +910,7 @@ orientation can be 'left/bottom/right/top.
 
 ;;;; App
 
-(defclass uikit-app (eieio-persistent)
+(uikit-defclass uikit-app (eieio-persistent)
   ((name
     :initarg :name
     :initform "An App"
@@ -909,7 +943,7 @@ Creates a buffer and segue to the entry scene."
 ;;; Subclass
 ;;;; Label
 
-(defclass uikit-label (uikit-atom-view)
+(uikit-defclass uikit-label (uikit-atom-view)
   ((text
     :initarg :text
     :accessor uikit--text-of
@@ -925,7 +959,7 @@ Creates a buffer and segue to the entry scene."
 
 ;;;; Clickable
 
-(defclass uikit-clickable ()
+(uikit-defclass uikit-clickable ()
   ((mouse-1-func
     :initarg :mouse-1-func
     :initform 'uikit-button-clicked
@@ -969,7 +1003,7 @@ It can be either a symbol or a lambda.")
                                     (define-key map (kbd "<return>") (uikit--return-func-of button))
                                     map)))
 ;;;; Editable
-(defclass uikit-editable ()
+(uikit-defclass uikit-editable ()
   ((edit-mode
     :initform nil
     :accessor uikit--edit-mode-of
@@ -1003,7 +1037,7 @@ The hook should take the view as argument."))
 
 ;;;;; Class
 
-(defclass uikit-button (uikit-label uikit-clickable)
+(uikit-defclass uikit-button (uikit-label uikit-clickable)
   ((text ;; override label.text
     :initform "Button"))
   "A Button.")
@@ -1024,7 +1058,7 @@ The hook should take the view as argument."))
 ;;;; Table
 ;;;;; Class
 ;;;;;; Table
-(defclass uikit-table (uikit-stackview)
+(uikit-defclass uikit-table (uikit-stackview)
   ((autolayout
     :initform 'stacking)
    (before-add-cell-hook
@@ -1107,7 +1141,7 @@ and return a cell (to be added to table).")
 
 
 ;;;;;; Editable Table
-(defclass uikit-editable-table (uikit-table uikit-editable)
+(uikit-defclass uikit-editable-table (uikit-table uikit-editable)
   ((add-button-cell
     :initarg :add-button-cell
     :initform nil ;; set at init
@@ -1135,7 +1169,7 @@ the table in edit mode."))
                                              (funcall (uikit--new-cell-func-of table) table))))))))
 
 ;;;;;; Table Cell
-(defclass uikit-table-cell (uikit-stackview)
+(uikit-defclass uikit-table-cell (uikit-stackview)
   ((autolayout
     :initform 'equal-spacing)
    (delete-button
@@ -1151,7 +1185,7 @@ the table in edit mode."))
         (make-instance 'uikit-button :text " X " :mouse-1-func (lambda () (interactive) (uikit-delete-cell cell)))))
 
 ;;;;;; Plain Cell
-(defclass uikit-plain-cell (uikit-table-cell)
+(uikit-defclass uikit-plain-cell (uikit-table-cell)
   ((title
     :initarg :title
     :initform "A Table"
