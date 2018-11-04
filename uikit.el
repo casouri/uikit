@@ -609,10 +609,11 @@ By default RETURN-FUNC used FUNC when RETURN-FUNC is nil."
 ;;;; Stackview
 ;;;;; Class
 (uikit-defclass uikit-stackview (uikit-view)
-  ((raw-subview-list
-    :initform nil
+  ((subview-list
+    :accessor uikit-subview-list-of
     :initarg :subview-list
-    :documentation "`subview-list' is calculated based on `raw-subview-list'.")
+    :initform nil
+    :documentation "List of subviews of the stack view.")
    (autolayout
     :accessor uikit-autolayout-of
     :initarg :autolayout
@@ -650,17 +651,6 @@ Only take effect when `autolayout' is non-nil.")
     :initform nil
     :documentation "Cache of `max-subview-height'."))
   "Stack view, used for grouping multiple view together and arrage their position automatically.")
-
-(cl-defmethod uikit-subview-list-of ((stack uikit-stackview))
-  "Return a incremented subview list of TABLE.
-Specifically, subview-list with header and footer."
-  (uikit-raw-subview-list-of stack))
-
-(cl-defmethod (setf uikit-subview-list-of) ((stack uikit-stackview) list)
-  "Set subview-list+ of TABLE with LIST."
-  (setf (uikit-raw-subview-list-of stack)
-        list))
-
 
 ;;;;; Methods
 
@@ -764,43 +754,43 @@ Doesn't change base on orientation."
 
 ;;;;; Helpers
 
-(cl-defmethod uikit-subview-append ((stackview uikit-stackview) &rest view-list)
-  "Append views in VIEW-LIST to STACKVIEW's `raw-subview-list'."
+(defun uikit-subview-append (stackview &rest view-list)
+  "Append views in VIEW-LIST to STACKVIEW's `subview-list'."
   ;; TOTEST
-  (setf (uikit-raw-subview-list-of stackview )
-        (append (uikit-raw-subview-list-of stackview)
+  (setf (uikit-subview-list-of stackview )
+        (append (uikit-subview-list-of stackview)
                 view-list)))
 
-(cl-defmethod uikit-subview-push ((stackview uikit-stackview) &rest view-list)
-  "Push views in VIEW-LIST to STACKVIEW's `raw-subview-list'."
+(defun uikit-subview-push (stackview &rest view-list)
+  "Push views in VIEW-LIST to STACKVIEW's `subview-list'."
   ;; TOTEST
-  (setf (uikit-raw-subview-list-of stackview )
+  (setf (uikit-subview-list-of stackview )
         (append (reverse view-list)
-                (uikit-raw-subview-list-of stackview))))
+                (uikit-subview-list-of stackview))))
 
-(cl-defmethod uikit-subview-delete ((stackview uikit-stackview) &rest view-list)
-  "Remove every view in VIEW-LIST from STACKVIEW's `raw-subview-list'."
+(defun uikit-subview-delete (stackview &rest view-list)
+  "Remove every view in VIEW-LIST from STACKVIEW."
   ;; TOTEST
   ;; TODO optimize?
-  (mapc (lambda (view) (delete view (uikit-raw-subview-list-of stackview))) view-list))
+  (mapc (lambda (view) (delete view (uikit-subview-list-of stackview))) view-list))
 
-(cl-defmethod uikit-subview-drop ((stackview uikit-stackview) &optional index)
-  "Drop subview at INDEX from STACKVIEW's `raw-subview-list'.
+(defun uikit-subview-drop (stackview &optional index)
+  "Drop subview at INDEX of STACKVIEW.
 If INDEX is nil, drop the last one."
   ;; TOTEST
-  (-remove-at (or index (1- (length (uikit-raw-subview-list-of stackview))))
-              (uikit-raw-subview-list-of stackview)))
+  (-remove-at (or index (1- (length (uikit-subview-list-of stackview))))
+              (uikit-subview-list-of stackview)))
 
 (defmacro uikit-dosubview (var stackview &rest body)
-  "Bind VAR to each subviews from STACKVIEW's `raw-subview-list'.
+  "Bind VAR to each subviews of STACKVIEW.
 And evaluate BODY for each."
   (declare (indent 2))
-  `(dolist (,var (uikit-raw-subview-list-of stackview))
+  `(dolist (,var (uikit-subview-list-of stackview))
      ,@body))
 
 (defmacro uikit-mapc-subview (func stackview)
-  "Call `mapc' with FUNC and `raw-subview-list' of STACKVIEW."
-  `(mapc #',func (uikit-raw-subview-list-of stackview)))
+  "Call `mapc' with FUNC and subview list of STACKVIEW."
+  `(mapc #',func (uikit-subview-list-of stackview)))
 
 ;;;; Auto Layout
 
@@ -1145,18 +1135,9 @@ and return a cell (to be added to table).")
   (setf (uikit-footnote-of table) footnote)
   (uikit-change-title (uikit-footer-of table) footnote))
 
-(cl-defmethod uikit-subview-list-of ((table uikit-table))
-  "Return a incremented subview list of TABLE.
-Specifically, subview-list with header and footer."
-  (remove nil (append (list (uikit-header-of table))
-                      (uikit-raw-subview-list-of table)
-                      (list (uikit-footer-of table)))))
-
-(cl-defmethod (setf uikit-subview-list-of) ((table uikit-table) list)
-  "Set subview-list+ of TABLE with LIST."
-  (setf (uikit-subview-list-of table)
-        (delete (uikit-header-of table)
-                (delete (uikit-footer-of table) list))))
+(cl-defmethod uikit-subview-list-of :around ((table uikit-table))
+  "Return the subview list of TABLE."
+  (remove nil (append (list (uikit-header-of table)) (cl-call-next-method table) (list (uikit-footer-of table)))))
 
 
 ;;;;;; Editable Table
