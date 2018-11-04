@@ -208,6 +208,8 @@ Additionally, it gives you a free initarg, accessor, writer and reader
 in following conventions:
 :initarg :slotname
 :accessor uikit-slotname-of
+:writer uikit--slotname-set
+:reader uikit--slotname-get
 
 Any user defined slot options will override these automatically generated ones."
   ;; TODO hand written accessor and initarg are not needed
@@ -223,7 +225,11 @@ Any user defined slot options will override these automatically generated ones."
                           (list :initarg
                                 (intern (format ":%s" slot-name))
                                 :accessor
-                                (intern (format "uikit-%s-of" slot-name))))))
+                                (intern (format "uikit-%s-of" slot-name))
+                                :reader
+                                (intern (format "uikit--%s-get" slot-name))
+                                :writer
+                                (intern (format "uikit--%s-set" slot-name))))))
               slot-list)
      ,@rest))
 
@@ -650,7 +656,7 @@ Only take effect when `autolayout' is non-nil.")
 Specifically, subview-list with header and footer."
   (uikit-raw-subview-list-of stack))
 
-(cl-defmethod (setf uikit-subview-list-of) (list (stack uikit-stackview))
+(cl-defmethod (setf uikit-subview-list-of) ((stack uikit-stackview) list)
   "Set subview-list+ of TABLE with LIST."
   (setf (uikit-raw-subview-list-of stack)
         list))
@@ -1146,7 +1152,7 @@ Specifically, subview-list with header and footer."
                       (uikit-raw-subview-list-of table)
                       (list (uikit-footer-of table)))))
 
-(cl-defmethod (setf uikit-subview-list-of) (list (table uikit-table))
+(cl-defmethod (setf uikit-subview-list-of) ((table uikit-table) list)
   "Set subview-list+ of TABLE with LIST."
   (setf (uikit-subview-list-of table)
         (delete (uikit-header-of table)
