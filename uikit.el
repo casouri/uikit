@@ -228,7 +228,7 @@ Any user defined slot options will override these automatically generated ones."
      ,@rest))
 
 ;;;; View
-;;;;; Class
+;;;;; View
 (uikit-defclass uikit-view ()
   ((id
     :initarg :id
@@ -243,32 +243,32 @@ so make sure to include app name as prefix to avoid name clash.
     :initarg :left
     :accessor uikit-raw-left-of
     :initform nil
-    :documentation "The left of view. Can be positive integer or (lambda (view)).")
+    :documentation "The left of view. Can be positive integer of (lambda (view)).")
    (right
     :initarg :right
     :accessor uikit-raw-right-of
     :initform nil
-    :documentation "The right of view. Can be positive integer or (lambda (view)).")
+    :documentation "The right of view. Can be positive integer of (lambda (view)).")
    (top
     :initarg :top
     :accessor uikit-raw-top-of
     :initform nil
-    :documentation "The top of view. Can be positive integer or (lambda (view)).")
+    :documentation "The top of view. Can be positive integer of (lambda (view)).")
    (bottom
     :initarg :bottom
     :accessor uikit-raw-bottom-of
     :initform nil
-    :documentation "The bottom of view. Can be positive integer or (lambda (view)).")
+    :documentation "The bottom of view. Can be positive integer of (lambda (view)).")
    (width
     :initarg :width
     :accessor uikit-raw-width-of
     :initform nil
-    :documentation "The width of view. Can be positive integer or (lambda (view)).")
+    :documentation "The width of view. Can be positive integer of (lambda (view)).")
    (height
     :initarg :height
     :accessor uikit-raw-height-of
     :initform nil
-    :documentation "The height of view. Can be positive integer or (lambda (view)).")
+    :documentation "The height of view. Can be positive integer of (lambda (view)).")
    (left-cache
     :accessor uikit-left-cache-of
     :initform nil
@@ -401,7 +401,6 @@ That might end up in infinite recursion."
                      ;; drawing: first look at cache, if nil calculate
                      (or (,xx-cache-of view)
                          (setf (,xx-cache-of view)
-                               ;; TODO add user-cofigured constrains (or user-congured raw)
                                (let ((constrain (,raw-xx-of view)))
                                  (pcase constrain
                                    ;; if there is a function in it, run that function,
@@ -786,12 +785,11 @@ If INDEX is nil, drop the last one."
   (-remove-at (or index (1- (length (uikit-raw-subview-list-of stackview))))
               (uikit-raw-subview-list-of stackview)))
 
-(defmacro uikit-dosubview (var&stackview &rest body)
+(defmacro uikit-dosubview (var stackview &rest body)
   "Bind VAR to each subviews from STACKVIEW's `raw-subview-list'.
-And evaluate BODY for each.
-VAR&STACKVIEW is (VAR STACKVIEW)."
+And evaluate BODY for each."
   (declare (indent 2))
-  `(dolist (,(car var&stackview) (uikit-raw-subview-list-of ,(cadr var&stackview)))
+  `(dolist (,var (uikit-raw-subview-list-of stackview))
      ,@body))
 
 (defmacro uikit-mapc-subview (func stackview)
@@ -1067,8 +1065,6 @@ The hook should take the view as argument."))
 (uikit-defclass uikit-table (uikit-stackview)
   ((autolayout
     :initform 'stacking)
-   (orientation
-    :initform 'top)
    (before-add-cell-hook
     :initarg :before-add-cell-hook
     :initform nil
@@ -1188,7 +1184,7 @@ the table in edit mode."))
 ;;;;;; Table Cell
 (uikit-defclass uikit-table-cell (uikit-stackview)
   ((autolayout
-    :initform 'stacking)
+    :initform 'equal-spacing)
    (delete-button
     :initarg :delete-button
     :initform nil ; but this will be set in init so it's not really nil
