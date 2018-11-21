@@ -1059,9 +1059,44 @@ The hook should take the view as argument."))
 ;;;; Table
 ;;;;; Class
 ;;;;;; Table
+(uikit-defclass uikit-table-body (uikit-stackview)
+  ((autolayout
+    :initform 'stacking)
+   (orientation
+    :initform 'top)
+   (v-align
+    :initform 'bottom))
+  "A table's body.")
+
+(cl-defmethod uikit-cell-append ((table uikit-table-body) cell)
+  "Add CELL to the end of TABLE.
+Use this function instead of `uikit-subview-append' for tables."
+  (uikit-subview-append table cell))
+
+(cl-defmethod uikit-cell-push ((table uikit-table-body) cell)
+  "Add CELL to the beginning TABLE.
+Use this function instead of `uikit-subview-push' for tables."
+  (uikit-subview-push table cell))
+
+(cl-defmethod uikit-cell-delete ((table uikit-table-body) cell)
+  "Remove every cell equal to CELL from TABLE.
+Use this function instead of `uikit-subview-delete'."
+  (uikit-subview-delete table cell))
+
+(cl-defmethod uikit-cell-drop ((table uikit-table-body) &optional index)
+  "Drop cell at INDEX of TABLE.
+If INDEX is nil, drop the last one.
+Use this function instead of `uikit-subview-drop'."
+  (uikit-subview-drop table index))
+
+
 (uikit-defclass uikit-table (uikit-stackview)
   ((autolayout
     :initform 'stacking)
+   (orientation
+    :initform 'top)
+   (v-align
+    :initform 'bottom)
    (before-add-cell-hook
     :initarg :before-add-cell-hook
     :initform nil
@@ -1093,27 +1128,25 @@ The hook should take the view as argument."))
     :accessor uikit-new-cell-func-of
     :documentation "The function that takes the table as argument
 and return a cell (to be added to table).")
+   (cell-list
+    :documentation "The cell list of table. This is a virtual slot.")
    (header
-    :initarg :header
     :initform nil
-    :accessor uikit-header-of
-    :documentation "The header of table, a cell.")
+    :documentation "The header of table, a `uikit-cell'.")
    (footer
-    :initarg :footer
     :initform nil
-    :accessor uikit-footer-of
-    :documentation "The footer of table, a cell.")
+    :documentation "The footer of table, a `uikit-cell'.")
+   (body
+    :initform (uikit-table-body)
+    :type uikit-table-body
+    :documentation "The body of titled table, a `uikit-table'.")
    (title
-    :initarg :title
     :initform nil
-    :accessor uikit-title-of
     :documentation "The tile of table. It is displayed in header if non-nil.")
    (footnote
-    :initarg :footnote
     :initform nil
-    :accessor uikit-footnote-of
     :documentation "The footnote of table. It is displayed in footer if non-nil."))
-  "A table.")
+  "A table with title and footnote.")
 
 (cl-defmethod initialize-instance :after ((table uikit-table) &rest _)
   "Set title and footnote if there is any."
@@ -1124,21 +1157,61 @@ and return a cell (to be added to table).")
                        :title title)))
     (when footnote (setf (uikit-footer-of table)
                          (uikit-plain-cell
-                          :title footnote)))))
+                          :title footnote))))
+  (setf (uikit-cell-list-of table) (slot-value table 'cell-list))
+  (slot-makeunbound table 'cell-list)
+  (setf (uikit-subview-list-of table)
+        (list (uikit-header-of table) (uikit-body-of table) (uikit-footer-of table))))
 
-(cl-defmethod uikit-change-title ((table uikit-table) title)
+(cl-defmethod (setf uikit-cell-list-of) (cell-list (table uikit-table))
+  "Set cell-list of TABLE to CELL-LIST."
+  (setf (uikit-subview-list-of (uikit-body-of table))
+        cell-list))
+
+(cl-defmethod uikit-cell-list-of ((table uikit-table))
+  "Return the cell-list slot of TABLE."
+  (uikit-subview-list-of (uikit-body-of table)))
+
+;; To make `slot-value' and `set-slot-value' also respect virtual slot,
+;; we don't declare the slot in class definition,
+;; then `slot-missing' will be called
+;; (cl-defmethod slot-missing ((object uikit-table) (slot-name (eql cell-list)) _operation &optional _new-value)
+;;   "If SLOT-NAME is `cell-list' call the corresponding reader and writer.
+;; Other arguments(OBJECT, _OPERATION, _NEW-VALUE) are the same as in `slot-missing'."
+;;   (if (eq _operation 'oset)
+;;       ;;set
+;;       (setf (uikit-cell-list-of object) new-value)
+;;     ;;get
+;;     (uikit-cell-list-of object)))
+
+(cl-defmethod (setf uikit-title-of) :after (title (table uikit-table))
   "Change TABLE's title to TITLE."
-  (setf (uikit-title-of table) title)
-  (uikit-change-title (uikit-header-of table) title))
+  (setf (uikit-title-of (uikit-header-of table)) title))
 
-(cl-defmethod uikit-change-footnote ((table uikit-table) footnote)
+(cl-defmethod (setf uikit-footnote-of) :after (footnote (table uikit-table))
   "Change TABLE's footnote to FOOTNOTE."
-  (setf (uikit-footnote-of table) footnote)
-  (uikit-change-title (uikit-footer-of table) footnote))
+  (setf (uikit-footnote-of (uikit-header-of table)) footnote))
 
-(cl-defmethod uikit-subview-list-of :around ((table uikit-table))
-  "Return the subview list of TABLE."
-  (remove nil (append (list (uikit-header-of table)) (cl-call-next-method table) (list (uikit-footer-of table)))))
+(cl-defmethod uikit-cell-append ((table uikit-table) cell)
+  "Add CELL to the end of TABLE.
+Use this function instead of `uikit-subview-append' for tables."
+  (uikit-cell-append (uikit-body-of table) cell))
+
+(cl-defmethod uikit-cell-push ((table uikit-table) cell)
+  "Add CELL to the beginning TABLE.
+Use this function instead of `uikit-subview-push' for tables."
+  (uikit-cell-push (uikit-body-of table) cell))
+
+(cl-defmethod uikit-cell-delete ((table uikit-table) cell)
+  "Remove every cell equal to CELL from TABLE.
+Use this function instead of `uikit-subview-delete'."
+  (uikit-cell-delete (uikit-body-of table) cell))
+
+(cl-defmethod uikit-cell-drop ((table uikit-table) &optional index)
+  "Drop cell at INDEX of TABLE.
+If INDEX is nil, drop the last one.
+Use this function instead of `uikit-subview-drop'."
+  (uikit-cell-drop (uikit-body-of table) index))
 
 
 ;;;;;; Editable Table
@@ -1172,7 +1245,7 @@ the table in edit mode."))
 ;;;;;; Table Cell
 (uikit-defclass uikit-table-cell (uikit-stackview)
   ((autolayout
-    :initform 'equal-spacing)
+    :initform 'stacking)
    (delete-button
     :initarg :delete-button
     :initform nil ; but this will be set in init so it's not really nil
