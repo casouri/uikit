@@ -316,7 +316,7 @@ Used to check if the view is within the stackview on screen."))
 
 (defsubst uikit-by-id (id)
   "Return the view by ID."
-  (intern (format "uikit//%s" id)))
+  (symbol-value (intern (format "uikit//%s" id))))
 
 (cl-defmethod initialize-instance :after ((view uikit-view) &rest _)
   "Process the :id key. Create a variable `uikit//ID' as an alias of the view (If there is any).
