@@ -450,6 +450,59 @@ That might end up in infinite recursion."
 (uikit--make-special-accessor width (ignore-errors (- (uikit-right-of view nil t) (uikit-left-of view nil t))))
 (uikit--make-special-accessor height (ignore-errors (- (uikit-bottom-of view nil ) (uikit-top-of view nil t))))
 
+;; in each orientation, the relationship between constrains:
+;; (constrain in parenthesis is the actual on-screen constrain)
+;;
+;; 'left:
+;; bottom(bottom) = top(top) + height(height)
+;; right(right) = left(left) + width(width)
+;;
+;; 'bottom:
+;; bottom(right) = top(left) + height(width)
+;; right(top) = left(bottom) - width(height)
+;;
+;; 'right
+;; bottom(top) = top(bottom) - height(height)
+;; right(left) = left(right) - width(width)
+;;
+;; 'top
+;; bottom(left) = top(right) - height(width)
+;; right(bottom) = left(top) + width(height)
+;;
+;; Notice there some are minus and some are plus in the (logically) same equation.
+;; e.g., something bottom = top + height, and other times bottom = top - height
+;; Obviously thats a problem.
+;;
+;; To solve the problem, we define directions that shifts basis with our constrains
+;; and when calculating between constrains, we use the shifted directions.
+;;
+;; P.S. in the above code (`uikit--make-special-accessor') we can use plain
+;; plus and minus because they are calculating on the on-screen values,
+;; which are fixed.
+;; On the other hand, our basis shifted part (in `uikit-autolaout') doesn't have
+;; that benefit
+
+
+(defmacro uikit-go-up (base distance)
+  "Return the value of going up DISTANCE from BASE."
+  `(funcall uikit-go-up ,base ,distance))
+(defmacro uikit-go-down (base distance)
+  "Return the value of going down DISTANCE from BASE."
+  `(funcall uikit-go-down ,base ,distance))
+(defmacro uikit-go-left (base distance)
+  "Return the value of going left DISTANCE from BASE."
+  `(funcall uikit-go-left ,base ,distance))
+(defmacro uikit-go-right (base distance)
+  "Return the value of going right DISTANCE from BASE."
+  `(funcall uikit-go-right ,base ,distance))
+
+
+(setq uikit-go-up (lambda (base distance) (- base distance))
+      uikit-go-down (lambda (base distance) (+ base distance))
+      uikit-go-right uikit-go-down
+      uikit-go-left uikit-go-up)
+
+
 ;;;; Atom View
 ;;;;; Class
 (uikit-defclass uikit-atom-view (uikit-view)
@@ -601,6 +654,23 @@ By default RETURN-FUNC used FUNC when RETURN-FUNC is nil."
   "Return the content height of VIEW."
   ;; TOTEST
   (length (uikit-content-of view)))
+
+(cl-defmethod uikit-content-height-in-parent-of ((view uikit-view))
+  "Return the content height of VIEW, in respect to its parent stackivew.
+That is, if parent stackview's orientation is 'top/'bottom (horizontal),
+this fucntion actually returns the width."
+  (pcase (uikit-orientation-of (uikit-parent-stackview-of view))
+    ((or 'left 'right) (uikit-content-height-of view))
+    ((or 'top 'bottom) (uikit-content-width-of view))))
+
+(cl-defmethod uikit-content-width-in-parent-of ((view uikit-view))
+  "Return the content height of VIEW, in respect to its parent stackivew.
+That is, if parent stackview's orientation is 'top/'bottom (horizontal),
+this fucntion actually returns the height."
+  (pcase (uikit-orientation-of (uikit-parent-stackview-of view))
+    ((or 'left 'right) (uikit-content-width-of view))
+    ((or 'top 'bottom) (uikit-content-height-of view))))
+
 
 (cl-defmethod uikit-content-changed ((view uikit-atom-view))
   "Let UIKit know VIEW's content is changed."
@@ -827,7 +897,11 @@ orientation can be 'left/bottom/right/top.
            (uikit-top-of (eval (nth orientation '(uikit-top-of uikit-left-of uikit-bottom-of uikit-right-of))))
            (uikit-bottom-of (eval (nth orientation '(uikit-bottom-of uikit-right-of uikit-top-of uikit-left-of))))
            (uikit-width-of (eval (nth orientation '(uikit-width-of uikit-height-of uikit-width-of uikit-height-of))))
-           (uikit-height-of (eval (nth orientation '(uikit-height-of uikit-width-of uikit-height-of uikit-width-of)))))
+           (uikit-height-of (eval (nth orientation '(uikit-height-of uikit-width-of uikit-height-of uikit-width-of))))
+           (uikit-go-up (eval (nth orientation '(uikit-go-up uikit-go-left uikit-go-down uikit-go-right))))
+           (uikit-go-left (eval (nth orientation '(uikit-go-left uikit-go-down uikit-go-right uikit-go-up))))
+           (uikit-go-down (eval (nth orientation '(uikit-go-down uikit-go-right uikit-go-up uikit-go-left))))
+           (uikit-go-right (eval (nth orientation '(uikit-go-down uikit-go-right uikit-go-up uikit-go-left)))))
        ,@body)))
 
 (defun uikit-autolayout (stackview)
@@ -838,18 +912,7 @@ orientation can be 'left/bottom/right/top.
            (space-func (pcase (uikit-autolayout-of stackview) ; function that returns the space length between subviews
                          ('stacking (lambda () (uikit-stacking-space-of stackview)))
                          ('equal-spacing (lambda () (uikit-equal-spacing-space-of stackview)))
-                         (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit-id-of stackview)))))
-           (top-func (pcase (uikit-v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
-                       ('top (lambda (view) (uikit-top-of (uikit-parent-stackview-of view))))
-                       ;; FIXME
-                       ('center (lambda (view)
-                                  (+ (uikit-top-of (uikit-parent-stackview-of view))
-                                     (/ (- (uikit-max-subview-height-of (uikit-parent-stackview-of view))
-                                           (uikit-content-height-of view)) 2))))
-                       ;; FIXME
-                       ('bottom (lambda (view)
-                                  (- (uikit-bottom-of (uikit-parent-stackview-of view))
-                                     (uikit-content-height-of view)))))))
+                         (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit-id-of stackview))))))
       (dolist (subview (uikit-subview-list-of stackview))
         ;; autolayout yourself if you are a stackview
         (when (cl-typep subview 'uikit-stackview)
@@ -871,7 +934,14 @@ orientation can be 'left/bottom/right/top.
                                    (uikit-id-of view))))
                        (+ right space))))
         ;; top & bottom
-        (uikit-top-of subview top-func)))))
+        (pcase (uikit-v-align-of stackview)
+          ('top (message "top") (uikit-top-of subview (lambda (view) (uikit-top-of (uikit-parent-stackview-of view)))))
+          ('center (uikit-bottom-of subview (lambda (view)
+                                              (uikit-go-up (uikit-bottom-of (uikit-parent-stackview-of view))
+                                                           (/ (- (uikit-max-subview-height-of (uikit-parent-stackview-of view))
+                                                                 (uikit-content-height-in-parent-of view)) 2)))))
+          ('bottom (message "bottom") (uikit-bottom-of subview (lambda (view)
+                                                                 (uikit-bottom-of (uikit-parent-stackview-of view))))))))))
 
 ;;;; Scene
 
