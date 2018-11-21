@@ -841,6 +841,7 @@ orientation can be 'left/bottom/right/top.
                          (_ (message "Warning: No autolayout type (\"autolayout\" slot) provided for %s" (uikit-id-of stackview)))))
            (top-func (pcase (uikit-v-align-of stackview) ;; function that returns space length between top of stackview and top of subview
                        ('top (lambda (view) (uikit-top-of (uikit-parent-stackview-of view))))
+                       ;; FIXME
                        ('center (lambda (view)
                                   (+ (uikit-top-of (uikit-parent-stackview-of view))
                                      (/ (- (uikit-max-subview-height-of (uikit-parent-stackview-of view))
