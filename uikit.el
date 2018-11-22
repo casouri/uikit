@@ -1201,10 +1201,10 @@ and return a cell (to be added to table).")
    (cell-list
     :documentation "The cell list of table. This is a virtual slot.")
    (header
-    :initform nil
+    :initform (uikit-plain-cell)
     :documentation "The header of table, a `uikit-cell'.")
    (footer
-    :initform nil
+    :initform (uikit-plain-cell)
     :documentation "The footer of table, a `uikit-cell'.")
    (body
     :initform (uikit-table-body)
@@ -1220,18 +1220,19 @@ and return a cell (to be added to table).")
 
 (cl-defmethod initialize-instance :after ((table uikit-table) &rest _)
   "Set title and footnote if there is any."
-  (let ((title (uikit-title-of table))
-        (footnote (uikit-footnote-of table)))
-    (when title (setf (uikit-header-of table)
-                      (uikit-plain-cell
-                       :title title)))
-    (when footnote (setf (uikit-footer-of table)
-                         (uikit-plain-cell
-                          :title footnote))))
-  (setf (uikit-cell-list-of table) (slot-value table 'cell-list))
-  (slot-makeunbound table 'cell-list)
+  (let ((title (slot-value table 'title))
+        (footnote (slot-value table 'footnote))
+        (cell-list (slot-value table 'cell-list)))
+    (when title (setf (uikit-title-of table) title))
+    (when footnote (setf (uikit-footnote-of table) footnote))
+    (when cell-list (setf (uikit-cell-list-of table) cell-list))
+    (slot-makeunbound table 'title)
+    (slot-makeunbound table 'footnote)
+    (slot-makeunbound table 'cell-list))
   (setf (uikit-subview-list-of table)
         (list (uikit-header-of table) (uikit-body-of table) (uikit-footer-of table))))
+
+;;;;;; Virtual Buffers
 
 (cl-defmethod (setf uikit-cell-list-of) (cell-list (table uikit-table))
   "Set cell-list of TABLE to CELL-LIST."
@@ -1254,13 +1255,21 @@ and return a cell (to be added to table).")
 ;;     ;;get
 ;;     (uikit-cell-list-of object)))
 
-(cl-defmethod (setf uikit-title-of) :after (title (table uikit-table))
+(cl-defmethod (setf uikit-title-of) (title (table uikit-table))
   "Change TABLE's title to TITLE."
   (setf (uikit-title-of (uikit-header-of table)) title))
 
-(cl-defmethod (setf uikit-footnote-of) :after (footnote (table uikit-table))
+(cl-defmethod uikit-title-of ((table uikit-table))
+  "Return TABLE's title."
+  (uikit-title-of (uikit-header-of table)))
+
+(cl-defmethod (setf uikit-footnote-of) (footnote (table uikit-table))
   "Change TABLE's footnote to FOOTNOTE."
-  (setf (uikit-footnote-of (uikit-header-of table)) footnote))
+  (setf (uikit-title-of (uikit-header-of table)) footnote))
+
+(cl-defmethod uikit-footnote-of ((table uikit-table))
+  "Return TABLE's footnote."
+  (uikit-title-of (uikit-header-of table)))
 
 (cl-defmethod uikit-cell-append ((table uikit-table) cell)
   "Add CELL to the end of TABLE.
@@ -1291,16 +1300,20 @@ Use this function instead of `uikit-subview-drop'."
     :initform nil ;; set at init
     :accessor uikit-add-button-cell-of
     :documentation "The cell with a button that can add a new cell to
-the table in edit mode."))
+the table in edit mode.")
+   (edit-button
+    :initform nil
+    :documentation "The button that on click, will toggle `uikit-edit-mode' of table."))
   "Table with edit-mode - add/delete buttons are added to table temperately.")
 
 (cl-defmethod :after initialize-instance ((table uikit-editable-table) &rest _)
   "Set add button cell and header edit button for TABLE."
   (uikit-subview-append (uikit-header-of table)
-                        (uikit-button :text "EDIT"
-                                      :mouse-1-func
-                                      (lambda () (interactive)
-                                        (uikit-edit-mode table))))
+                        (setf (uikit-edit-button-of table)
+                              (uikit-button :text "EDIT"
+                                            :mouse-1-func
+                                            (lambda () (interactive)
+                                              (uikit-edit-mode table)))))
   (setf (uikit-add-button-cell-of table)
         (make-instance
          'uikit-table-cell
@@ -1309,8 +1322,8 @@ the table in edit mode."))
              'uikit-button
              :text " + "
              :mouse-1-func (lambda () (interactive)
-                             (uikit-add-cell table
-                                             (funcall (uikit-new-cell-func-of table) table))))))))
+                             (uikit-cell-append table
+                                                (funcall (uikit-new-cell-func-of table) table))))))))
 
 ;;;;;; Table Cell
 (uikit-defclass uikit-table-cell (uikit-stackview)
@@ -1336,22 +1349,23 @@ the table in edit mode."))
     :accessor uikit-title-of
     :type string
     :documentation "The title of the cell.")
-   (title-view
-    :initform nil
-    :accessor uikit-title-view-of
-    :documentation "The label view displayed by cell.")))
+   (title-label
+    :initform (uikit-label)
+    :accessor uikit-title-label-of
+    :documentation "The label displayed by cell.")))
 
 (cl-defmethod initialize-instance :after ((cell uikit-plain-cell) &rest _)
   "Create cell contents."
-  (uikit-subview-append cell (setf (uikit-title-view-of cell)
-                                   (uikit-label :text (uikit-title-of cell)))))
+  ;; TODO set text of title-label
+  )
 
-(cl-defmethod uikit-change-title ((cell uikit-plain-cell) title)
-  "Change CELL's title to TITLE."
-  (setf (uikit-title-of cell)
-        title
-        (uikit-text-of (uikit-title-view-of cell))
-        title))
+(cl-defmethod (setf uikit-title-of) (title (cell uikit-plain-cell))
+  "Change `title' of CELL to TITLE."
+  (setf (uikit-text-of (uikit-title-label-of cell)) title))
+
+(cl-defmethod uikit-title-of ((cell uikit-plain-cell))
+  "Return `title' of CELL."
+  (uikit-text-of (uikit-title-label-of cell)))
 
 ;;;;; Methods
 ;;;;;; Add/Delete Cell
