@@ -130,11 +130,15 @@ If you need to control the initialization, create a subclass.
 - uikit-make-content
 
 * TO-DO list
+** TODO Add user-configured constrains
+** TODO Fix table edit button
+** TODO fix subview-list implementation for table
 ** TODO after edit hook -> change text
-** TODO clickable class
+** DONE clickable class
 ** TODO cache for =max-subview-height=
 ** TODO add last position of view and don't draw if position didn't change.
-** TODO How to clean drawing cache after drawing?
+** TODO clear constrain cache before drawing
+** DONE How to clean drawing cache after drawing?
 When content changed?
 ** DONE Revise caching in drawing process
 - keep pos

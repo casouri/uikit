@@ -1,8 +1,8 @@
 #+TITLE: UIKit
 
-* Important
+*Abandoned and why:* The goal of this project is basically a GUI that you see on a terminal, but implemented in Emacs buffer and comes with auto layouts in "modern GUI"s. I found this method is quite foreign for Emacs and went for another approach.
 
-*This package is in early development stage, I upload the code so I can ask specific questions in the forum.*
+-----
 
 This package aims to provide a high level framework
 and a set of useful widgets to help developers 
